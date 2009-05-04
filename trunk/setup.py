@@ -24,6 +24,13 @@ setup(name='PyWebDAV',
       version=VERSION,
       long_description="""
       WebDAV library for python. Consists of a server and the DAV package that provides WebDAV functionality.
+      After installation of this package you will have a new script in you $PYTHON/bin directory called
+      *davserver*. This serves as the main entry point to the server.
+
+      Example
+      ::
+        davserver -D /home/files -n
+
       For more information go to http://code.google.com/p/pywebdav/
       """,
       classifiers = [

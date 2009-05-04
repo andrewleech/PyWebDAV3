@@ -1,4 +1,9 @@
 
+- Restructured the structure a bit: Made server package
+  a real python package. Adapted error messages. Prepared
+  egg distribution.
+  [Simon Pamies]
+
 - Fix for time formatting bug. Thanks to Ian Kallen
   [Simon Pamies]
 

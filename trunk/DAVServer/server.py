@@ -137,6 +137,17 @@ Parameters:
 Please send bug reports and feature requests to %s
 """ % (__version__, __author__)
 
+def setupDummyConfig(**kw):
+
+    class DummyConfigDAV:
+        def __init__(self, **kw):
+            self.__dict__.update(**kw)
+
+    class DummyConfig:
+        DAV = DummyConfigDAV(**kw)
+
+    return DummyConfig()
+
 def run():
     verbose = False
     directory = '/tmp'
@@ -224,23 +235,19 @@ def run():
 
     else:
 
-        class DummyConfigDAV:
-            verbose = verbose
-            directory = directory
-            port = port
-            host = host
-            noauth = noauth
-            user = user
-            password = password
-            daemonize = daemonize
-            daemonaction = daemonaction
-            counter = counter
-            lockemulation = lockemulation
+        _dc = { 'verbose' : verbose,
+                'directory' : directory,
+                'port' : port,
+                'host' : host,
+                'noauth' : noauth,
+                'user' : user,
+                'password' : password,
+                'daemonize' : daemonize,
+                'daemonaction' : daemonaction,
+                'counter' : counter,
+                'lockemulation' : lockemulation }
 
-        class DummyConfig:
-            DAV = DummyConfigDAV()
-    
-        conf = DummyConfig()
+        conf = setupDummyConfig(**_dc)
 
     if mysql == True and configfile == '':
         print >>sys.stderr, '>> ERROR: You can only use MySQL with configuration file!'
@@ -253,7 +260,9 @@ def run():
 
     if not noauth and daemonaction not in ['status', 'stop']:
         if not user:
-            print >>sys.stderr, '>> ERROR: Please specify an username or pass parameter --noauth (get options with --help)'
+            print usage
+            print >>sys.stderr, '>> ERROR: No usable parameter specified!'
+            print >>sys.stderr, '>> Example: davserver -D /home/files -n'
             sys.exit(3)
   
     if daemonaction == 'status':

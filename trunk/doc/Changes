@@ -1,4 +1,7 @@
 
+0.9.1 (May 4th 2009)
+--
+
 - Restructured the structure a bit: Made server package
   a real python package. Adapted error messages. Prepared
   egg distribution.

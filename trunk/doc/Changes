@@ -1,0 +1,114 @@
+
+- Fix for time formatting bug. Thanks to Ian Kallen
+  [Simon Pamies]
+
+- Small fixes for WebDavServer (status not handled correctly) and
+  propfind (children are returned from a PROPFIND with "Depth: 0")
+  [Kjetil Ørbekk]
+
+0.8 (Jul 15th 2008)
+---
+
+- First try of an implementation of the LOCK and UNLOCK features.
+  Still very incomplete (read: very incomplete) and not working
+  in this version.
+  [Simon Pamies]
+
+- Some code cleanups to prepare restructuring
+  [Simon Pamies]
+
+- Port to minidom because PyXML isn't longer maintained
+  [Martin v. Loewis]
+
+- utils.py: Makes use of DOMImplementation class to create a new xml document
+  Uses dom namespace features to create elements within DAV: namespace
+  [Stephane Bonhomme]
+
+- davcmd.py: Missing an indent in loop on remove and copy operations on trees, the
+  effect was that only the last object was removed/copied : always leads
+  to a failure when copying collections.
+  [Stephane Bonhomme]
+
+- propfind.py: missing a return at the end of the createResponse method (case of a
+  propfind without xml body, should act as a allprops).
+  [Stephane Bonhomme]
+
+0.7
+---
+
+- Added MySQL auth support brought by Vince Spicer
+- Added INI file support also  introduced by Vince
+- Some minor bugfixes and integration changes.
+- Added instance counter to make multiple instances possible
+- Extended --help text a bit
+
+0.6
+---
+
+- Added bugfixes for buggy Mac OS X Finder implementation
+  Finder tries to stat .DS_Store without checking if it exists
+- Cleaned up readme and install files
+- Moved license to extra file
+- Added distutils support
+- Refactored module layout
+- Refactored class and module names
+- Added commandline support
+- Added daemonize support
+- Added logging facilities
+- Added extended arguments
+
+- some more things I can't remember (spamsch)
+
+Changes since 0.5.1
+-------------------
+Updated to work with latest 4Suite
+
+Changes since 0.5
+-----------------
+
+- added constants.py 
+- data.py must now return COLLECTION or OBJECT when getting asked for
+  resourcetype. propfind.py will automatically generate the right xml 
+  element.
+- <href> now only contains the path
+- changed HTTP/1.0 header to HTTP/1.1 which makes it work with WebFolders
+- added DO_AUTH constant to AuthServer.py to control whether authentication
+  should be done or not.
+- added chunked responses in davserver.py
+  One step in order to get a server with keep-alive one day.
+- we now use 4DOM instead if PyDOM
+- the URI in a href is quoted
+- complete rewrite of the PROPFIND stuff:
+    - error responses are now generated when a property if not found
+      or not accessible
+    - namespace handling is now better. We forget any prefix and
+      create them ourselves later in the response.
+- added superclass iface.py in DAV/ in order to make implementing
+  interface classes easier. See data.py for how to use it.
+  Also note that the way data.py handles things might have changed from
+  the previous release (if you don't like it wait for 1.0!)
+- added functions to iface.py which format creationdate and lastmodified
+- implemented HEAD
+
+- lots of bugfixes
+
+
+Changes since 0.3
+-----------------
+
+- removed hard coded base uri from davserver.py and replaced by
+  a reference to the dataclass. Added this to iface.py where you
+  have to define it in your subclass.
+- added davcmd.py which contains utility functions for copy and move
+- reimplemented DELETE and removed dependencies to pydom. move actual
+  delete method to davcmd.
+- implemented COPY
+- implemented MOVE
+- fixed bugs in errors.py, needs revisiting anyway..
+- URIs are now unquoted in davserver.py before being used
+- paths in data.py are quoted in system calls in order to support
+  blanks in pathnames (e.g. mkdir '%s' )
+- switched to exceptions when catching errors from the interface class
+- added exists() method to data.py
+- added more uri utility functions to utils.py
+- millenium bugfixes ;-)

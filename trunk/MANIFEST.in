@@ -1,0 +1,3 @@
+include setup.py ARCHITECTURE Changes INSTALL LICENSE 
+include README TODO VERSION MANIFEST.in
+include PyDAVServer/*.py PyDAVServer/*.ini

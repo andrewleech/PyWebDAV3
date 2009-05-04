@@ -1,0 +1,129 @@
+
+Python WebDAV implementation.
+
+A working WebDAV Server is included in the PyDAVServer package. Feel free to
+extend it to your needs. Please send suggestions and bugfixes to the author(s).
+
+LICENSE
+-------
+
+see doc/LICENSE file
+
+
+AUTHOR(s)
+------
+
+Simon Pamies (also current maintainer)
+Bielefeld, Germany
+s.pamies@banality.de
+
+Christian Scholz
+Aachen, Germany
+mrtopf@webdav.de
+
+Vince Spicer
+Ontario, Canada
+vince@vince.ca
+
+
+REQUIREMENTS
+------------
+
+- Python 2.0  or higher (www.python.org)
+- PyXML 0.66 (pyxml.sourceforge.net)
+
+OPTIONAL
+--------
+
+- MySQLdb (http://sourceforge.net/projects/mysql-python)
+	- Mysql server 4.0+ for Mysql authentication with
+	  with read/write access to one database
+
+INSTALLATION
+------------
+
+see doc/INSTALL file
+
+What is WebDAV?
+---------------
+
+http://www.webdav.org.
+http://www.ietf.org/rfc/rfc2518.txt
+
+What is Python?
+---------------
+
+http://www.python.org.
+http://diveintopython.org/
+
+Contents
+--------
+
+Here is a little overview of the package:
+
+A. In the DAV/ package:
+
+    1. BufferingHTTPServer
+       
+       This is the same as the normal BasicHTTPServer but instead of
+       directly sending each string over the network this implementation
+       caches it and sends it at once after finishing one request.
+
+       This has the advantage that clients like cadaver don't break as
+       they want to peek at the next lines when encountering e.g. a header.
+
+    2. AuthHTTPServer
+       
+       This works on top of either the BasicHTTPServer or the 
+       BufferingHTTPServer and implements basic authentication.
+
+    3. WebDAVServer
+       This server uses AuthHTTPServer for the base functionality. It also uses
+       a dav interface class for interfacing with the actual data storage (e.g.
+       a filesystem or a database).
+
+B. In the PyDAVServer directory:
+
+    1. server.py
+       Main file for server. Serves as a start point for the WebDAV server
+
+    2. fshandler.py
+       Backend for the DAV server. Makes him serving content from the filesystem.
+       Have a deeper look at it if you want to implement backends to other data sources
+
+    3. fileauth.py
+       Handler for authentication. Nothing very special about it.
+
+    4. dbconn.py
+       Mysql Database Handler.
+
+    5. INI_Parse.py
+       Parses the config.ini file.
+
+    6. config.ini
+       PyWebDav configuration file.
+
+
+NOTES
+-----
+
+Right now some parts are missing like handling of ALLPROP and PROPNAMES as 
+the whole proppatch method. Also not everything is tested and the return 
+codes might not be the right ones in every case.
+
+I plan to adjust things in order to work with my groupware project which 
+I then will release (actually it's my thesis I am working on). 
+
+Look inside the file TODO for things which needs to be done and will be done 
+in the near future. 
+
+If you find bugs (many!) or have suggestions then please email the maintainer
+
+Thanks :)
+
+
+Windows Notes
+-------------
+
+This version can not be run under windows.
+

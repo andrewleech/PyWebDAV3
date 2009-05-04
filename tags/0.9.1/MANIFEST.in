@@ -1,3 +1,0 @@
-include setup.py README VERSION
-include doc/*
-include PyDAVServer/*.py PyDAVServer/*.ini

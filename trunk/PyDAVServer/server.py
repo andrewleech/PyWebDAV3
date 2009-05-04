@@ -137,8 +137,7 @@ Parameters:
 Please send bug reports and feature requests to %s
 """ % (__version__, __author__)
 
-if __name__ == '__main__':
-
+def run():
     verbose = False
     directory = '/tmp'
     port = 8008
@@ -286,3 +285,6 @@ if __name__ == '__main__':
     handler._config = conf
 
     runserver(port, host, directory, verbose, noauth, user, password, handler=handler)
+
+if __name__ == '__main__':
+    run()

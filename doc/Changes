@@ -1,5 +1,15 @@
 
-- Implemented first working LOCK and UNLOCK
+- Fixed COPY, MOVE, DELETE to support locked
+  resources
+  [Simon Pamies]
+
+- Fixed PROPFIND to return 404 for non existing
+  objects and also reduce property bloat
+  [Simon Pamies]
+
+- Implemented fully working LOCK and UNLOCK based
+  on in memory lock/token database. Now fully supports
+  cadaver and Mac OS X Finder.
   [Simon Pamies]
 
 - Fixed MKCOL answer to 201

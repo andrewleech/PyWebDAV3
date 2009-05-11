@@ -242,7 +242,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             dc.mkcol(uri)
             self.send_status(201)
         except DAV_Error, (ec,dd):
-            self.send_status(ec)
+            return self.send_status(ec)
 
     def do_DELETE(self):
         """ delete an resource """
@@ -293,16 +293,18 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 self.send_status(412)
                 return
 
-        dl=DELETE(uri,dc)
+        # locked resources are not allowed to delete
+        if self._l_isLocked(uri):
+            return self.send_body(None, '423', 'Locked', 'Locked')
+
+        dl = DELETE(uri,dc)
         if dc.is_collection(uri):
             res=dl.delcol()
-        else:
-            res=dl.delone()
+        else: res=dl.delone()
 
         if res:
             self.send_status(207,body=res)
-        else:
-            self.send_status(204)
+        else: self.send_status(204)
 
     def do_PUT(self):
         dc=self.IFACE_CLASS
@@ -365,14 +367,18 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
 
+        # locked resources are not allowed to be overwritten
+        if self._l_isLocked(uri):
+            return self.send_body(None, '423', 'Locked', 'Locked')
+
         ct=None
         if self.headers.has_key("Content-Type"):
             ct=self.headers['Content-Type']
         try:
             location = dc.put(uri,body,ct)
         except DAV_Error, (ec,dd):
-            self.send_status(ec)
-            return
+            return self.send_status(ec)
+
         headers = {}
         if location:
             headers['Location'] = location
@@ -390,14 +396,14 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         try:
             self.copymove(COPY)
         except DAV_Error, (ec,dd):
-            self.send_status(ec)
+            return self.send_status(ec)
 
     def do_MOVE(self):
         """ move one resource to another """
         try:
             self.copymove(MOVE)
         except DAV_Error, (ec,dd):
-            self.send_status(ec)
+            return self.send_status(ec)
 
     def copymove(self,CLASS):
         """ common method for copying or moving objects """
@@ -410,6 +416,10 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         # get the destination URI
         dest_uri=self.headers['Destination']
         dest_uri=urllib.unquote(dest_uri)
+
+        # check locks on source and dest
+        if self._l_isLocked(source_uri) or self._l_isLocked(dest_uri):
+            return self.send_body(None, '423', 'Locked', 'Locked')
 
         # Overwrite?
         overwrite=1

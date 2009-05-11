@@ -16,10 +16,19 @@ WebDAV library for python. Consists of a server and the DAV package that provide
 After installation of this package you will have a new script in you $PYTHON/bin directory called
 *davserver*. This serves as the main entry point to the server.
 
-Example ::
-    davserver -D /home/files -n
+Example (using easy_install)::
 
-For more information go to http://code.google.com/p/pywebdav/
+    easy_install PyWebDAV
+    davserver -D /tmp -n
+
+Example (unpacking file locally)::
+
+    tar xvzf PyWebDAV-$VERSION.tar.gz
+    cd pywebdav
+    python setup.py develop
+    davserver -D /tmp -n
+
+For more information: http://code.google.com/p/pywebdav/
 """
 
 from distutils.core import setup

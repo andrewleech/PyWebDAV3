@@ -169,7 +169,6 @@ def copytree(dc,src,dst,overwrite=None):
         esrc=replace(element,src,"")
         actual_dst=dpath+esrc
 
-        print actual_dst
         # now copy stuff
         try:
             copy(dc,element,actual_dst)

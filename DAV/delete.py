@@ -26,7 +26,6 @@ import string
 import urllib
 from StringIO import StringIO
 
-from status import STATUS_CODES
 from utils import gen_estring, quote_uri, make_xmlresponse
 from davcmd import deltree
 

@@ -118,10 +118,10 @@ class PROPFIND:
             re=self.mk_propname_response(self.__uri,pnames, doc)
             ms.appendChild(re)
         
-        for newuri in dc.get_childs(self.__uri):
-            pnames=dc.get_propnames(newuri)
-            re=self.mk_propname_response(newuri,pnames, doc)
-            ms.appendChild(re)
+            for newuri in dc.get_childs(self.__uri):
+                pnames=dc.get_propnames(newuri)
+                re=self.mk_propname_response(newuri,pnames, doc)
+                ms.appendChild(re)
 
         # *** depth=="infinity"  
 
@@ -176,10 +176,10 @@ class PROPFIND:
             res=self.mk_prop_response(self.__uri,gp,bp,doc)
             ms.appendChild(res)
         
-        for newuri in self.__dataclass.get_childs(self.__uri):
-            gp,bp=self.get_propvalues(newuri)
-            res=self.mk_prop_response(newuri,gp,bp,doc)
-            ms.appendChild(res)
+            for newuri in self.__dataclass.get_childs(self.__uri):
+                gp,bp=self.get_propvalues(newuri)
+                res=self.mk_prop_response(newuri,gp,bp,doc)
+                ms.appendChild(res)
 
         return doc.toxml(encoding="utf-8")
 

@@ -7,6 +7,7 @@ status codes for DAV services
 
 
 STATUS_CODES={
+        100:    "Continue",
         102:    "Processing",
         200:    "Ok",
         201:    "Created",

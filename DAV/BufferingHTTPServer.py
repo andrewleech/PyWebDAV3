@@ -48,7 +48,6 @@ class BufferedHTTPRequestHandler(BaseHTTPRequestHandler):
         this (see below)
         """
         self.__buffer=""
-        self.__outfp=open("/tmp/out.%s" %self.__class__,"a+")
     
     def _append(self,s):
         """ append a string to the buffer """
@@ -57,8 +56,6 @@ class BufferedHTTPRequestHandler(BaseHTTPRequestHandler):
     def _flush(self):
         """ flush the buffer to wfile """
         self.wfile.write(self.__buffer)
-        self.__outfp.write(self.__buffer)
-        self.__outfp.flush()
         self.wfile.flush()
         self.__buffer=""
 

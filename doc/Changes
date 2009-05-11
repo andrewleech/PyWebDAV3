@@ -1,4 +1,23 @@
 
+- Make propfind respect the depth from queries
+  [Cédric Krier]
+
+- Add ETag in the header of GET. This is needed to implement 
+  GroupDAV, CardDAV and CalDAV.
+  [Cédric Krier]
+
+- Handle the "Expect 100-continue" header
+  [Cédric Krier]
+
+- Remove debug statements and remove logging
+  [Cédric Krier]
+
+- Use the Host header in baseuri if set.
+  [Cédric Krier]
+
+- Adding If-Match on PUT and DELETE
+  [Cédric Krier]
+
 0.9.1 (May 4th 2009)
 --
 

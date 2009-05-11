@@ -16,7 +16,7 @@ import urlparse
 from StringIO import StringIO
 
 from constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
-from status import STATUS_CODES
+from BaseHTTPServer import BaseHTTPRequestHandler
 
 VERSION = '0.9-dev'
 AUTHOR  = 'Simon Pamies <s.pamies@banality.de>'
@@ -25,8 +25,8 @@ AUTHOR  = 'Simon Pamies <s.pamies@banality.de>'
 def gen_estring(ecode):
     """ generate an error string from the given code """
     ec=atoi(str(ecode))
-    if STATUS_CODES.has_key(ec):
-        return "HTTP/1.1 %s %s" %(ec,STATUS_CODES[ec])
+    if BaseHTTPRequestHandler.responses.has_key(ec):
+        return "HTTP/1.1 %s %s" %(ec, BaseHTTPRequestHandler.responses[ec][0])
     else:
         return "HTTP/1.1 %s" %(ec)
 

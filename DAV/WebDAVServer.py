@@ -48,7 +48,6 @@ from davcopy import COPY
 from davmove import MOVE
 
 from string import atoi,split
-from status import STATUS_CODES
 from errors import *
 
 class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
@@ -171,7 +170,6 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         if self.headers.has_key("Content-Length"):
             l=self.headers['Content-Length']
             body=self.rfile.read(atoi(l))
-        self.write_infp(body)
 
         # which Depth?
         if self.headers.has_key('Depth'):
@@ -179,7 +177,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         else:
             d="infinity"
 
-        uri=urlparse.urljoin(dc.baseuri,self.path)
+        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
         pf=PROPFIND(uri,dc,d)
 
@@ -208,7 +206,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         """Serve a GET request."""
 
         dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(dc.baseuri,self.path)
+        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
 
         # get the last modified date
@@ -217,6 +215,13 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         except:
             lm="Sun, 01 Dec 2014 00:00:00 GMT"  # dummy!
         headers={"Last-Modified":lm}
+
+        # get the ETag
+        try:
+            etag = dc.get_prop(uri, "DAV:", "getetag")
+            headers['ETag'] = etag
+        except:
+            pass
 
         # get the content type
         try:
@@ -238,7 +243,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         """ Send a HEAD response """
 
         dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(dc.baseuri,self.path)
+        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
 
         # get the last modified date
@@ -248,6 +253,13 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
             lm="Sun, 01 Dec 2014 00:00:00 GMT"  # dummy!
 
         headers={"Last-Modified":lm}
+
+        # get the ETag
+        try:
+            etag = dc.get_prop(uri, "DAV:", "getetag")
+            headers['ETag'] = etag
+        except:
+            pass
 
         # get the content type
         try:
@@ -271,7 +283,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         """ create a new collection """
 
         dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(dc.baseuri,self.path)
+        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
         try:
             dc.mkcol(uri)
@@ -282,8 +294,51 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
     def do_DELETE(self):
         """ delete an resource """
         dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(dc.baseuri,self.path)
+        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
+
+        # Handle If-Match
+        if self.headers.has_key('If-Match'):
+            test = False
+            etag = None
+            try:
+                etag = dc.get_prop(uri, "DAV:", "getetag")
+            except:
+                pass
+            for match in self.headers['If-Match'].split(','):
+                if match == '*':
+                    if dc.exists(uri):
+                        test = True
+                        break
+                else:
+                    if match == etag:
+                        test = True
+                        break
+            if not test:
+                self.send_status(412)
+                return
+
+        # Handle If-None-Match
+        if self.headers.has_key('If-None-Match'):
+            test = True
+            etag = None
+            try:
+                etag = dc.get_prop(uri, "DAV:", "getetag")
+            except:
+                pass
+            for match in self.headers['If-None-Match'].split(','):
+                if match == '*':
+                    if dc.exists(uri):
+                        test = False
+                        break
+                else:
+                    if match == etag:
+                        test = False
+                        break
+            if not test:
+                self.send_status(412)
+                return
+
         dl=DELETE(uri,dc)
         if dc.is_collection(uri):
             res=dl.delcol()
@@ -298,23 +353,83 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
     def do_PUT(self):
         dc=self.IFACE_CLASS
 
+        # Handle If-Match
+        if self.headers.has_key('If-Match'):
+            test = False
+            etag = None
+            try:
+                etag = dc.get_prop(uri, "DAV:", "getetag")
+            except:
+                pass
+            for match in self.headers['If-Match'].split(','):
+                if match == '*':
+                    if dc.exists(uri):
+                        test = True
+                        break
+                else:
+                    if match == etag:
+                        test = True
+                        break
+            if not test:
+                self.send_status(412)
+                return
+
+        # Handle If-None-Match
+        if self.headers.has_key('If-None-Match'):
+            test = True
+            etag = None
+            try:
+                etag = dc.get_prop(uri, "DAV:", "getetag")
+            except:
+                pass
+            for match in self.headers['If-None-Match'].split(','):
+                if match == '*':
+                    if dc.exists(uri):
+                        test = False
+                        break
+                else:
+                    if match == etag:
+                        test = False
+                        break
+            if not test:
+                self.send_status(412)
+                return
+
+        # Handle expect
+        expect = self.headers.get('Expect', '')
+        if (expect.lower() == '100-continue' and
+                self.protocol_version >= 'HTTP/1.1' and
+                self.request_version >= 'HTTP/1.1'):
+            self.send_status(100)
+            self._flush()
+
         # read the body
         body=None
         if self.headers.has_key("Content-Length"):
             l=self.headers['Content-Length']
             body=self.rfile.read(atoi(l))
-        uri=urlparse.urljoin(dc.baseuri,self.path)
+        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
 
         ct=None
         if self.headers.has_key("Content-Type"):
             ct=self.headers['Content-Type']
         try:
-            dc.put(uri,body,ct)
+            location = dc.put(uri,body,ct)
         except DAV_Error, (ec,dd):
             self.send_status(ec)
             return
-        self.send_status(201)
+        headers = {}
+        if location:
+            headers['Location'] = location
+
+        try:
+            etag = dc.get_prop(location or uri, "DAV:", "getetag")
+            headers['ETag'] = etag
+        except:
+            pass
+
+        self.send_body(None, '201', 'Created', '', headers=headers)
 
     def do_COPY(self):
         """ copy one resource to another """
@@ -335,7 +450,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         dc=self.IFACE_CLASS
 
         # get the source URI
-        source_uri=urlparse.urljoin(dc.baseuri,self.path)
+        source_uri=urlparse.urljoin(self.get_baseuri(dc),self.path)
         source_uri=urllib.unquote(source_uri)
 
         # get the destination URI
@@ -382,7 +497,8 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
                 return
 
         if res:
-            self.send_body_chunks(res,207,STATUS_CODES[207],STATUS_CODES[207],
+            self.send_body_chunks(res,207,self.responses[207][0],
+                            self.responses[207][1],
                             ctype='text/xml; charset="utf-8"')
         else:
             self.send_status(result_code)
@@ -395,6 +511,13 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
     def send_status(self,code=200,mediatype='text/xml;  charset="utf-8"', \
                                 msg=None,body=None):
 
-        if not msg: msg=STATUS_CODES[code]
-        self.send_body(body,code,STATUS_CODES[code],msg,mediatype)
+        if not msg: msg=self.responses[code][1]
+        self.send_body(body,code,self.responses[code][0],msg,mediatype)
 
+    def get_baseuri(self, dc):
+        baseuri = dc.baseuri
+        if self.headers.has_key('Host'):
+            uparts = list(urlparse.urlparse(dc.baseuri))
+            uparts[1] = self.headers['Host']
+            baseuri = urlparse.urlunparse(uparts)
+        return baseuri

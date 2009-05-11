@@ -93,7 +93,7 @@ class dav_interface:
     def put(self,uri,data):
         """ write an object to the repository 
 
-        return a result code or raise an exception
+        return the location uri or raise an exception
         """
 
         raise DAV_Forbidden

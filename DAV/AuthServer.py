@@ -77,11 +77,7 @@ class AuthRequestHandler:
         Special handle method with buffering and authentication
         """
         
-        self.infp=open("/tmp/in.%s" %self.__class__, "a+")
-
-        self.infp.write("------------------------------------------------------------------------------\n")
         self.raw_requestline = self.rfile.readline()
-        self.infp.write(self.raw_requestline)
         self.request_version = version = "HTTP/0.9" # Default
         requestline = self.raw_requestline
 
@@ -112,7 +108,6 @@ class AuthRequestHandler:
         
         self.command, self.path, self.request_version = command, path, version
         self.headers = self.MessageClass(self.rfile, 0)
-        self.infp.write(str(self.headers))
 
         # test authentification
         if self.DO_AUTH:
@@ -138,13 +133,7 @@ class AuthRequestHandler:
         method = getattr(self, mname)
         method()
 
-        self.infp.flush()
-        self.infp.close()
         self._flush()
-
-    def write_infp(self,s):
-        self.infp.write(str(s))
-        self.infp.flush()
 
     def send_response(self,code, message=None):
         """Override send_response to use the correct http version

@@ -59,6 +59,10 @@ class PROPFIND:
 
         """
 
+        # check if resource exists
+        if not self.__dataclass.exists(self.__uri):
+            raise DAV_NotFound
+
         df = None
         if self.request_type==RT_ALLPROP:
             df = self.create_allprop()
@@ -231,10 +235,10 @@ class PROPFIND:
             ns_prefix="ns"+str(self.namespaces.index(ns))+":"
             for p,v in good_props[ns].items():
 
+                pe=doc.createElement(ns_prefix+str(p))
                 if hasattr(v, '__class__') and v.__class__.__name__ == 'Element':
-                    gp.appendChild(v)
+                    pe.appendChild(v)
                 else:
-                    pe=doc.createElement(ns_prefix+str(p))
                     if p=="resourcetype":
                         if v=="1":
                             ve=doc.createElement("D:collection")
@@ -243,7 +247,7 @@ class PROPFIND:
                         ve=doc.createTextNode(str(v))
                         pe.appendChild(ve)
 
-                    gp.appendChild(pe)
+                gp.appendChild(pe)
         
         ps.appendChild(gp)
         s=doc.createElement("D:status")

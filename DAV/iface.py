@@ -105,10 +105,10 @@ class dav_interface:
     ###
     def _get_dav_supportedlock(self, uri):
 
-        txt = ('<main xmlns:D="http://dummy/d" xmlns:ns1="http://webdav.de/ns1"><ns1:lockentry>\n'
-                '<D:lockscope><D:exclusive/></D:lockscope>\n'
-                '<D:locktype><D:write/></D:locktype>\n'
-                '</ns1:lockentry></main>\n ')
+        txt = ('<main xmlns:D="http://dummy/d" xmlns:ns1="http://webdav.de/ns1"><D:lockentry>\n'
+                '<D:lockscope><D:exclusive></D:exclusive></D:lockscope>\n'
+                '<D:locktype><D:write></D:write></D:locktype>\n'
+                '</D:lockentry></main>\n')
         xml = minidom.parseString(txt)
         return xml.firstChild.firstChild
 

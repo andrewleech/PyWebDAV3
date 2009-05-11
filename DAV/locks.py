@@ -222,7 +222,7 @@ class LockItem:
                'locktype': self.locktype,
                'lockscope': self.lockscope,
                'depth': self.depth,
-               'owner': self.owner,
+               'owner': self.owner and self.owner or '',
                'timeout': self.getTimeoutString(),
                'locktoken': token,
                }

@@ -22,14 +22,8 @@ def gen_estring(ecode):
         return "HTTP/1.1 %s" %(ec)
 
 def parse_propfind(xml_doc):
-    """ parse an propfind xml file and return a list of props 
-
-    returns:
-        
-        request_type            -- ALLPROP, PROPNAME, PROP
-        proplist            -- list of properties found
-        namespaces            -- list of namespaces found
-    
+    """ 
+    Parse an propfind xml file and return a list of props 
     """
 
     doc = minidom.parseString(xml_doc)

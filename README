@@ -1,19 +1,66 @@
+PyWebDAV is a standards compliant WebDAV server and library written in Python
 
-Python WebDAV implementation.
 
-A working WebDAV Server is included in the PyDAVServer package. Feel free to
-extend it to your needs. Please send suggestions and bugfixes to the author(s).
+DESCRIPTION
+-----------
+
+Python WebDAV implementation (level 1 and 2) that features a library that enables you
+to integrate WebDAV server capabilities to your application
+
+A fully working example on how to use the library is included. You can find the server in the DAVServer package. Upon installation a script called davserver is created in your $PYTHON/bin directory.
+
+If you search an easy to use WebDAV server that supports most clients (cadaver, Mac OS X Finder, Windows Explorer, ...) then try out PyWebDAV.
+
+
+INSTALLATION
+------------
+
+Installation and setup of server can be as easy as follows:
+
+$ easy_install PyWebDAV 
+$ davserver -D /tmp -n -J
+
+If you're living on the bleeding edge then check out the sourcecode from
+http://code.google.com/p/pywebdav/source/checkout
+
+After having downloaded code simply install a development egg:
+
+$ svn co svn checkout http://pywebdav.googlecode.com/svn/trunk/ pywebdav
+$ cd pywebdav
+$ python setup.py develop
+$ davserver --help
+
+Send patches to http://code.google.com/p/pywebdav/issues/list
+
+If you want to use the library then have a look at the DAVServer package that
+holds all code for a full blown server. Also doc/ARCHITECURE has information for you.
+
+
+QUESTIONS?
+---------
+
+Ask here http://groups.google.com/group/pywebdav
+or send an email to the maintainer.
+
+
+REQUIREMENTS
+------------
+
+- Python 2.4  or higher (www.python.org)
+- PyXML 0.66 (pyxml.sourceforge.net)
+
 
 LICENSE
 -------
 
-see doc/LICENSE file
+General Public License v2
+see doc/LICENSE
 
 
 AUTHOR(s)
 ------
 
-Simon Pamies (also current maintainer)
+Simon Pamies [*]
 Bielefeld, Germany
 s.pamies@banality.de
 
@@ -25,12 +72,8 @@ Vince Spicer
 Ontario, Canada
 vince@vince.ca
 
+[*]: Current Maintainer
 
-REQUIREMENTS
-------------
-
-- Python 2.0  or higher (www.python.org)
-- PyXML 0.66 (pyxml.sourceforge.net)
 
 OPTIONAL
 --------
@@ -39,91 +82,11 @@ OPTIONAL
 	- Mysql server 4.0+ for Mysql authentication with
 	  with read/write access to one database
 
-INSTALLATION
-------------
-
-see doc/INSTALL file
-
-What is WebDAV?
----------------
-
-http://www.webdav.org.
-http://www.ietf.org/rfc/rfc2518.txt
-
-What is Python?
----------------
-
-http://www.python.org.
-http://diveintopython.org/
-
-Contents
---------
-
-Here is a little overview of the package:
-
-A. In the DAV/ package:
-
-    1. BufferingHTTPServer
-       
-       This is the same as the normal BasicHTTPServer but instead of
-       directly sending each string over the network this implementation
-       caches it and sends it at once after finishing one request.
-
-       This has the advantage that clients like cadaver don't break as
-       they want to peek at the next lines when encountering e.g. a header.
-
-    2. AuthHTTPServer
-       
-       This works on top of either the BasicHTTPServer or the 
-       BufferingHTTPServer and implements basic authentication.
-
-    3. WebDAVServer
-       This server uses AuthHTTPServer for the base functionality. It also uses
-       a dav interface class for interfacing with the actual data storage (e.g.
-       a filesystem or a database).
-
-B. In the PyDAVServer directory:
-
-    1. server.py
-       Main file for server. Serves as a start point for the WebDAV server
-
-    2. fshandler.py
-       Backend for the DAV server. Makes him serving content from the filesystem.
-       Have a deeper look at it if you want to implement backends to other data sources
-
-    3. fileauth.py
-       Handler for authentication. Nothing very special about it.
-
-    4. dbconn.py
-       Mysql Database Handler.
-
-    5. INI_Parse.py
-       Parses the config.ini file.
-
-    6. config.ini
-       PyWebDav configuration file.
-
 
 NOTES
 -----
 
-Right now some parts are missing like handling of ALLPROP and PROPNAMES as 
-the whole proppatch method. Also not everything is tested and the return 
-codes might not be the right ones in every case.
-
-I plan to adjust things in order to work with my groupware project which 
-I then will release (actually it's my thesis I am working on). 
-
-Look inside the file TODO for things which needs to be done and will be done 
+Look inside the file doc/TODO for things which needs to be done and will be done 
 in the near future. 
 
-If you find bugs (many!) or have suggestions then please email the maintainer
-
-Thanks :)
-
-
-Windows Notes
--------------
-
-This version can not be run under windows.
-
+Have a look at doc/ARCHITECTURE to understand what's going on under the hood

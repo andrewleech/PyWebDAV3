@@ -4,14 +4,14 @@ How to install python WebDAV server
 1. Check prerequisites
 
     + *nix OS (including Mac OS X)
-      Will not run on Windows!
+      Windows seems to work
       
-    + Python 2.x
+    + Python >=2.4.x
     + PyXML
 
 2. Run setup.py
 
-    > sudo python setup.py install
+    $ python setup.py install
 
 4. Change to the PyDAVServer directory and start server with 
 

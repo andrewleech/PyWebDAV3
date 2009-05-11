@@ -1,3 +1,52 @@
+
+OVERVIEW
+--------
+
+Here is a little overview of the package:
+
+A. In the DAV/ package:
+
+    1. BufferingHTTPServer
+       
+       This is the same as the normal BasicHTTPServer but instead of
+       directly sending each string over the network this implementation
+       caches it and sends it at once after finishing one request.
+
+       This has the advantage that clients like cadaver don't break as
+       they want to peek at the next lines when encountering e.g. a header.
+
+    2. AuthHTTPServer
+       
+       This works on top of either the BasicHTTPServer or the 
+       BufferingHTTPServer and implements basic authentication.
+
+    3. WebDAVServer
+       This server uses AuthHTTPServer for the base functionality. It also uses
+       a dav interface class for interfacing with the actual data storage (e.g.
+       a filesystem or a database).
+
+B. In the PyDAVServer directory:
+
+    1. server.py
+       Main file for server. Serves as a start point for the WebDAV server
+
+    2. fshandler.py
+       Backend for the DAV server. Makes him serving content from the filesystem.
+       Have a deeper look at it if you want to implement backends to other data sources
+
+    3. fileauth.py
+       Handler for authentication. Nothing very special about it.
+
+    4. dbconn.py
+       Mysql Database Handler.
+
+    5. INI_Parse.py
+       Parses the config.ini file.
+
+    6. config.ini
+       PyWebDav configuration file.
+
+
 Class Tree
 ----------
 

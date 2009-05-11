@@ -115,10 +115,8 @@ Parameters:
     -m, --mysql     Pass this parameter if you want MySQL based authentication.
                     If you want to use MySQL then the usage of a configuration
                     file is mandatory.
-    -J, --lockemu   Activate experimental lock and unlock emulation. Currently
-                    no real locking is done. It is only to satisfy clients
-                    needing DAV 2 compliant server for read/write access 
-                    (Mac OS X Finder).
+    -J, --lockemu   Activate experimental LOCK and UNLOCK mode (WebDAV Version 2).
+                    Currently know to work but needs more tests.
     -i, --icounter  If you want to run multiple instances then you have to
                     give each instance it own number so that logfiles and such
                     can be identified. Default is 0

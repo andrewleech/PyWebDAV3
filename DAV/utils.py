@@ -10,7 +10,7 @@ from StringIO import StringIO
 from constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
 from BaseHTTPServer import BaseHTTPRequestHandler
 
-VERSION = '0.9.2-dev'
+VERSION = '0.9.2'
 AUTHOR  = 'Simon Pamies <s.pamies@banality.de>'
 
 def gen_estring(ecode):

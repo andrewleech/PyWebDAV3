@@ -33,7 +33,7 @@ For more information: http://code.google.com/p/pywebdav/
 
 from distutils.core import setup
 setup(name='PyWebDAV',
-      description='WebDAV library including a standalone server for python',
+      description='WebDAV library including a standalone server for python (Now featuring LOCK and UNLOCK)',
       author='Simon Pamies',
       author_email='spamsch@gmail.com',
       maintainer='Simon Pamies',

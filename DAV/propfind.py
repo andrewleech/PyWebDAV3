@@ -1,25 +1,3 @@
-#!/usr/bin/env python
-
-"""
-    python davserver
-    Copyright (C) 1999 Christian Scholz (ruebe@aachen.heimat.de)
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-"""
-
 
 import xml.dom.minidom
 domimpl = xml.dom.minidom.getDOMImplementation()
@@ -49,8 +27,7 @@ class PROPFIND:
     
     """
 
-
-    def __init__(self,uri,dataclass,depth):
+    def __init__(self,uri,dataclass,depth, body):
         self.request_type=None
         self.nsmap={}
         self.proplist={}
@@ -63,11 +40,12 @@ class PROPFIND:
         if dataclass.verbose:
             print >>sys.stderr, 'PROPFIND: Depth is %s, URI is %s' % (depth, uri)
 
-    def read_propfind(self,xml_doc):
-        self.request_type,self.proplist,self.namespaces=utils.parse_propfind(xml_doc)
+        if body:
+            self.request_type, self.proplist, self.namespaces = utils.parse_propfind(body)
+            self.__has_body = True
 
     def createResponse(self):
-        """ create the multistatus response 
+        """ Create the multistatus response 
 
         This will be delegated to the specific method
         depending on which request (allprop, propname, prop)
@@ -86,7 +64,7 @@ class PROPFIND:
             df = self.create_allprop()
         
         if self.request_type==RT_PROPNAME:
-            df =  self.create_propname()
+            df = self.create_propname()
         
         if self.request_type==RT_PROP:
             df = self.create_prop()
@@ -252,16 +230,20 @@ class PROPFIND:
         for ns in good_props.keys():
             ns_prefix="ns"+str(self.namespaces.index(ns))+":"
             for p,v in good_props[ns].items():
-                pe=doc.createElement(ns_prefix+str(p))
-                if p=="resourcetype":
-                    if v=="1":
-                        ve=doc.createElement("D:collection")
-                        pe.appendChild(ve)
-                else:
-                    ve=doc.createTextNode(str(v))
-                    pe.appendChild(ve)
 
-                gp.appendChild(pe)
+                if hasattr(v, '__class__') and v.__class__.__name__ == 'Element':
+                    gp.appendChild(v)
+                else:
+                    pe=doc.createElement(ns_prefix+str(p))
+                    if p=="resourcetype":
+                        if v=="1":
+                            ve=doc.createElement("D:collection")
+                            pe.appendChild(ve)
+                    else:
+                        ve=doc.createTextNode(str(v))
+                        pe.appendChild(ve)
+
+                    gp.appendChild(pe)
         
         ps.appendChild(gp)
         s=doc.createElement("D:status")
@@ -316,7 +298,11 @@ class PROPFIND:
                 ec = 0
                 try:
                     r=ddc.get_prop(uri,ns,prop)
-                    good_props[ns][prop]=str(r)
+
+                    # support for element returns
+                    if hasattr(r, '__class__') and r.__class__.__name__ == 'Element':
+                        good_props[ns][prop]=r
+                    else: good_props[ns][prop]=str(r)
                 except DAV_Error, error_code:
                     ec=error_code[0]
                 

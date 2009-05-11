@@ -7,6 +7,8 @@ class.
 
 """
 
+from xml.dom import minidom
+from locks import LockManager
 from errors import *
 
 import time
@@ -97,6 +99,30 @@ class dav_interface:
         """
 
         raise DAV_Forbidden
+
+    ###
+    ### LOCKing information
+    ###
+    def _get_dav_supportedlock(self, uri):
+
+        txt = ('<main xmlns:D="http://dummy/d" xmlns:ns1="http://webdav.de/ns1"><ns1:lockentry>\n'
+                '<D:lockscope><D:exclusive/></D:lockscope>\n'
+                '<D:locktype><D:write/></D:locktype>\n'
+                '</ns1:lockentry></main>\n ')
+        xml = minidom.parseString(txt)
+        return xml.firstChild.firstChild
+
+    def _get_dav_lockdiscovery(self, uri):
+        lcm = LockManager()
+        if lcm._l_isLocked(uri):
+            lock = lcm._l_getLockForUri(uri)
+            txt = lock.asXML(discover=True, namespace='D')
+
+            txtwithns = '<main xmlns:D="http://dummy/D" xmlns:n="http://webdav.de/N">%s</main>'
+            xml = minidom.parseString(txtwithns % txt)
+            return xml.firstChild.firstChild
+
+        return ''
 
     ###
     ### Methods for DAV properties

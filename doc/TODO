@@ -25,13 +25,7 @@ PROPFIND
 GET
 ---
 
-- guessing type?
-
-
-HEAD
-----
-
-to be done
+- guessing mimetype?
 
 
 PROPPATCH
@@ -39,11 +33,4 @@ PROPPATCH
 
 to be done (not that important as only DAV props are supported right now which
 you cannot change)
-
-data.py
--------
-
-- implement proppatch? As example we might use some sort of database for 
-  storing..  (to much trouble for a simple example? Better show it with 
-  the groupware stuff?)
 

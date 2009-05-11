@@ -184,7 +184,8 @@ class FilesystemHandler(dav_interface):
     def mkcol(self,uri):
         """ create a new collection """
         path=self.uri2local(uri)
-        # remove leading slash
+
+        # remove trailing slash
         if path[-1]=="/": path=path[:-1]
 
         # test if file already exists

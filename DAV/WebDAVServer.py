@@ -47,10 +47,14 @@ from delete import DELETE
 from davcopy import COPY
 from davmove import MOVE
 
+from utils import rfc1123_date
 from string import atoi,split
 from errors import *
 
-class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
+from constants import DAV_VERSION_1, DAV_VERSION_2
+from locks import LockManager
+
+class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     """Simple DAV request handler with 
     
     - GET
@@ -82,15 +86,16 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         self.send_response(code,message=msg)
         self.send_header("Connection", "close")
         self.send_header("Accept-Ranges", "bytes")
+        self.send_header('Date', rfc1123_date())
         
         for a,v in headers.items():
             self.send_header(a,v)
         
         if DATA:
-            self.send_header("Content-Length", str(len(DATA)))
-            self.send_header("Content-Type", ctype)
+            self.send_header('Content-Length', len(DATA))
+            self.send_header('Content-Type', ctype)
         else:
-            self.send_header("Content-Length", "0")
+            self.send_header('Content-Length', 0)
         
         self.end_headers()
         if DATA:
@@ -104,7 +109,9 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         self.send_header("Content-type", ctype)
         self.send_header("Connection", "close")
         self.send_header("Transfer-Encoding", "chunked")
+        self.send_header('Date', rfc1123_date())
         self.end_headers()
+
         self._append(hex(len(DATA))[2:]+"\r\n")
         self._append(DATA)
         self._append("\r\n")
@@ -115,79 +122,101 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
 
     def do_OPTIONS(self):
         """return the list of capabilities """
+
         self.send_response(200)
-        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", 0)
 
         if self._config.DAV.lockemulation is True:
             if self._config.DAV.verbose is True:
-                print >>sys.stderr, 'Activated LOCK,UNLOCK emulation for this connection (NOT known to work currently)'
+                print >>sys.stderr, 'Activated LOCK,UNLOCK emulation (experimental)'
 
-            self.send_header('Allow', 'GET, HEAD, COPY, MOVE, POST, PUT, PROPFIND, PROPPATCH, OPTIONS, MKCOL, DELETE, TRACE, LOCK, UNLOCK')
-            self.send_header('DAV', '1,2')
+            self.send_header('Allow', DAV_VERSION_2['options'])
+            self.send_header('DAV', DAV_VERSION_2['version'])
 
         else:
-            self.send_header("Allow", "GET, HEAD, COPY, MOVE, POST, PUT, PROPFIND, PROPPATCH, OPTIONS, MKCOL, DELETE, TRACE")
-            self.send_header('DAV', '1')
+            self.send_header('Allow', DAV_VERSION_1['options'])
+            self.send_header('DAV', DAV_VERSION_1['version'])
 
         self.send_header('MS-Author-Via', 'DAV') # this is for M$
         self.end_headers()
 
-    def _init_locks(self):
-        if not hasattr(self, '_lock_table'):
-            self._lock_table = {}
+    def _HEAD_GET(self, with_body=False):
+        """ Returns headers and body for given resource """
 
-        return self._lock_table
+        dc = self.IFACE_CLASS
+        uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
+        uri = urllib.unquote(uri)
 
-    def is_locked(self, uri):
-        table = self._init_locks()
-        return table.has_key(uri)
+        headers = {}
 
-    def do_LOCK(self):
-        """ Locking is implemented via in-memory caches. No data is written.  """
+        # get the last modified date (RFC 1123!)
+        try:
+            headers['Last-Modified'] = dc.get_prop(uri,"DAV:","getlastmodified")
+        except DAV_NotFound: headers['Last-Modified'] = "Sun, 01 Dec 2038 00:00:00 GMT"
 
-        if self._config.DAV.verbose is True:
-            print >>sys.stderr, 'LOCKing resource %s' % self.headers
+        # get the ETag if any
+        try:
+            headers['Etag'] = dc.get_prop(uri, "DAV:", "getetag")
+        except DAV_NotFound: pass
 
-        # XXX this is not finished and'll be replaced soon
-        token = str(random.randint(123, 12345678))
-        header = {'Lock-Token' : token}
-        return self.send_status(body=str(token))
+        # get the content type
+        try:
+            content_type = dc.get_prop(uri,"DAV:","getcontenttype")
+        except DAV_NotFound: content_type = "application/octet-stream"
 
-    def do_UNLOCK(self):
-        """ Always send OK with no content = Status 204 """
+        # get the data
+        try:
+            data = dc.get_data(uri)
+        except DAV_Error, (ec,dd):
+            self.send_status(ec)
+            return 
 
-        if self.DAV._config.DAV.verbose is True:
-            print >>sys.stderr, 'UNLOCKing resource %s' % self.headers
+        # send the data
+        if with_body is False:
+            data = None
 
-        return self.send_status(204)
+        self.send_body(data, '200', "OK", "OK", content_type, headers)
+
+    def do_HEAD(self):
+        """ Send a HEAD response: Retrieves resource information w/o body """
+
+        return self._HEAD_GET(with_body=False)
+
+    def do_GET(self):
+        """Serve a GET request."""
+
+        return self._HEAD_GET(with_body=True)
+
+    def do_TRACE(self):
+        """ This will always fail because we can not reproduce HTTP requests. 
+        We send back a 405=Method Not Allowed. """
+
+        self.send_body(None, '405', 'Method Not Allowed', 'Method Not Allowed')
+
+    def do_POST(self):
+        """ Replacement for GET response. Not implemented here. """
+
+        self.send_body(None, '405', 'Method Not Allowed', 'Method Not Allowed')
 
     def do_PROPFIND(self):
+        """ Retrieve properties on defined resource. """
 
-        dc=self.IFACE_CLASS
+        dc = self.IFACE_CLASS
 
-        # read the body
-        body=None
-        if self.headers.has_key("Content-Length"):
-            l=self.headers['Content-Length']
-            body=self.rfile.read(atoi(l))
+        # read the body containing the xml request
+        # iff there is no body then this is an ALLPROP request
+        body = None
+        if self.headers.has_key('Content-Length'):
+            l = self.headers['Content-Length']
+            body = self.rfile.read(atoi(l))
 
-        # which Depth?
-        if self.headers.has_key('Depth'):
-            d=self.headers['Depth']
-        else:
-            d="infinity"
+        uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
+        uri = urllib.unquote(uri)
 
-        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri=urllib.unquote(uri)
-        pf=PROPFIND(uri,dc,d)
-
-        if body:    
-            pf.read_propfind(body)
-
+        pf = PROPFIND(uri, dc, self.headers.get('Depth', 'infinity'), body)
 
         try:
-            DATA=pf.createResponse()
-            DATA=DATA+"\n"
+            DATA = '%s\n' % pf.createResponse()
         except DAV_Error, (ec,dd):
             return self.send_status(ec)
 
@@ -195,89 +224,12 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         # taken from Resource.py @ Zope webdav
         if (self.headers.get('User-Agent') ==
             'Microsoft Data Access Internet Publishing Provider DAV 1.1'):
-            result = result.replace('<ns0:getlastmodified xmlns:ns0="DAV:">',
+            DATA = DATA.replace('<ns0:getlastmodified xmlns:ns0="DAV:">',
                                     '<ns0:getlastmodified xmlns:n="DAV:" xmlns:b="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/" b:dt="dateTime.rfc1123">')
-            result = result.replace('<ns0:creationdate xmlns:ns0="DAV:">',
+            DATA = DATA.replace('<ns0:creationdate xmlns:ns0="DAV:">',
                                     '<ns0:creationdate xmlns:n="DAV:" xmlns:b="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/" b:dt="dateTime.tz">')
 
-        self.send_body_chunks(DATA,'207','Multi-Status','Multiple responses')
-
-    def do_GET(self):
-        """Serve a GET request."""
-
-        dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri=urllib.unquote(uri)
-
-        # get the last modified date
-        try:
-            lm=dc.get_prop(uri,"DAV:","getlastmodified")
-        except:
-            lm="Sun, 01 Dec 2014 00:00:00 GMT"  # dummy!
-        headers={"Last-Modified":lm}
-
-        # get the ETag
-        try:
-            etag = dc.get_prop(uri, "DAV:", "getetag")
-            headers['ETag'] = etag
-        except:
-            pass
-
-        # get the content type
-        try:
-            ct=dc.get_prop(uri,"DAV:","getcontenttype")
-        except:
-            ct="application/octet-stream"
-
-        # get the data
-        try:
-            data=dc.get_data(uri)
-        except DAV_Error, (ec,dd):
-            self.send_status(ec)
-            return 
-
-        # send the data
-        self.send_body(data,"200","OK","OK",ct,headers)
-
-    def do_HEAD(self):
-        """ Send a HEAD response """
-
-        dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri=urllib.unquote(uri)
-
-        # get the last modified date
-        try:
-            lm=dc.get_prop(uri,"DAV:","getlastmodified")
-        except:
-            lm="Sun, 01 Dec 2014 00:00:00 GMT"  # dummy!
-
-        headers={"Last-Modified":lm}
-
-        # get the ETag
-        try:
-            etag = dc.get_prop(uri, "DAV:", "getetag")
-            headers['ETag'] = etag
-        except:
-            pass
-
-        # get the content type
-        try:
-            ct=dc.get_prop(uri,"DAV:","getcontenttype")
-        except:
-            ct="application/octet-stream"
-
-        try:
-            data=dc.get_data(uri)
-            headers["Content-Length"]=str(len(data))
-        except DAV_NotFound:
-            self.send_body(None,"404","Not Found","")
-            return
-
-        self.send_body(None,"200","OK","OK",ct,headers)
-
-    def do_POST(self):
-        self.send_error(404,"File not found")
+        self.send_body_chunks(DATA, '207','Multi-Status','Multiple responses')
 
     def do_MKCOL(self):
         """ create a new collection """
@@ -285,17 +237,19 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler):
         dc=self.IFACE_CLASS
         uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
+
         try:
             dc.mkcol(uri)
-            self.send_status(200)
+            self.send_status(201)
         except DAV_Error, (ec,dd):
             self.send_status(ec)
 
     def do_DELETE(self):
         """ delete an resource """
-        dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri=urllib.unquote(uri)
+
+        dc = self.IFACE_CLASS
+        uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
+        uri = urllib.unquote(uri)
 
         # Handle If-Match
         if self.headers.has_key('If-Match'):

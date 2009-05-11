@@ -1,26 +1,17 @@
-#!/usr/bin/env python
-
-"""
-
-UTILITIES
-
-- parse a propfind request body into a list of props
-
-"""
-
+import time
+import re
 
 from xml.dom import minidom
 
-from string import lower, split, atoi, joinfields
 import urlparse
+from string import lower, split, atoi, joinfields
 from StringIO import StringIO
 
 from constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
 from BaseHTTPServer import BaseHTTPRequestHandler
 
-VERSION = '0.9-dev'
+VERSION = '0.9.2-dev'
 AUTHOR  = 'Simon Pamies <s.pamies@banality.de>'
-
 
 def gen_estring(ecode):
     """ generate an error string from the given code """
@@ -146,3 +137,97 @@ def make_xmlresponse(result):
         doc.documentElement.appendChild(re)
 
     return doc.toxml(encoding="utf-8")
+
+# taken from App.Common
+
+weekday_abbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+weekday_full = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                'Friday', 'Saturday', 'Sunday']
+monthname    = [None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+def rfc1123_date(ts=None):
+    # Return an RFC 1123 format date string, required for
+    # use in HTTP Date headers per the HTTP 1.1 spec.
+    # 'Fri, 10 Nov 2000 16:21:09 GMT'
+    if ts is None: ts=time.time()
+    year, month, day, hh, mm, ss, wd, y, z = time.gmtime(ts)
+    return "%s, %02d %3s %4d %02d:%02d:%02d GMT" % (weekday_abbr[wd],
+                                                    day, monthname[month],
+                                                    year,
+                                                    hh, mm, ss)
+def iso8601_date(ts=None):
+    # Return an ISO 8601 formatted date string, required
+    # for certain DAV properties.
+    # '2000-11-10T16:21:09-08:00
+    if ts is None: ts=time.time()
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(ts))
+
+def rfc850_date(ts=None):
+    # Return an HTTP-date formatted date string.
+    # 'Friday, 10-Nov-00 16:21:09 GMT'
+    if ts is None: ts=time.time()
+    year, month, day, hh, mm, ss, wd, y, z = time.gmtime(ts)
+    return "%s, %02d-%3s-%2s %02d:%02d:%02d GMT" % (
+            weekday_full[wd],
+            day, monthname[month],
+            str(year)[2:],
+            hh, mm, ss)
+
+### If: header handling support.  IfParser returns a sequence of
+### TagList objects in the order they were parsed which can then
+### be used in WebDAV methods to decide whether an operation can
+### proceed or to raise HTTP Error 412 (Precondition failed)
+IfHdr = re.compile(
+    r"(?P<resource><.+?>)?\s*\((?P<listitem>[^)]+)\)"
+    )
+
+ListItem = re.compile(
+    r"(?P<not>not)?\s*(?P<listitem><[a-zA-Z]+:[^>]*>|\[.*?\])",
+    re.I)
+
+class TagList:
+    def __init__(self):
+        self.resource = None
+        self.list = []
+        self.NOTTED = 0
+
+def IfParser(hdr):
+    out = []
+    i = 0
+    while 1:
+        m = IfHdr.search(hdr[i:])
+        if not m: break
+
+        i = i + m.end()
+        tag = TagList()
+        tag.resource = m.group('resource')
+        if tag.resource:                # We need to delete < >
+            tag.resource = tag.resource[1:-1]
+        listitem = m.group('listitem')
+        tag.NOTTED, tag.list = ListParser(listitem)
+        out.append(tag)
+
+    return out
+
+def tokenFinder(token):
+    # takes a string like '<opaquelocktoken:afsdfadfadf> and returns the token
+    # part.
+    if not token: return None           # An empty string was passed in
+    if token[0] == '[': return None     # An Etag was passed in
+    if token[0] == '<': token = token[1:-1]
+    return token[token.find(':')+1:]
+
+def ListParser(listitem):
+    out = []
+    NOTTED = 0
+    i = 0
+    while 1:
+        m = ListItem.search(listitem[i:])
+        if not m: break
+
+        i = i + m.end()
+        out.append(m.group('listitem'))
+        if m.group('not'): NOTTED = 1
+
+    return NOTTED, out

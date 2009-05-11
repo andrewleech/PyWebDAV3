@@ -1,4 +1,13 @@
 
+- Implemented first working LOCK and UNLOCK
+  [Simon Pamies]
+
+- Fixed MKCOL answer to 201
+  [Jesus Cea]
+
+- Fixed MSIE webdav headers
+  [Jesus Cea]
+
 - Make propfind respect the depth from queries
   [Cédric Krier]
 

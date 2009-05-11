@@ -13,6 +13,8 @@ VERSION = VERSION.replace('\n', '')
 
 DOC = """
 WebDAV library for python. Consists of a server and the DAV package that provides WebDAV functionality.
+Currently supports WebDAV level 1 and level 2 (LOCK, UNLOCK) making it play nice with cadaver, Mac OS X Finder, Windows Explorer or even iCal.
+
 After installation of this package you will have a new script in you $PYTHON/bin directory called
 *davserver*. This serves as the main entry point to the server.
 
@@ -33,7 +35,7 @@ For more information: http://code.google.com/p/pywebdav/
 
 from distutils.core import setup
 setup(name='PyWebDAV',
-      description='WebDAV library including a standalone server for python (Now featuring LOCK and UNLOCK)',
+      description='WebDAV library including a standalone server for python',
       author='Simon Pamies',
       author_email='spamsch@gmail.com',
       maintainer='Simon Pamies',

@@ -210,7 +210,7 @@ def run():
         if o in ['-H', '--host']:
             host = a
 
-        if o in ['-P', '--p']:
+        if o in ['-P', '--port']:
             port = a
 
         if o in ['-v', '--verbose']:

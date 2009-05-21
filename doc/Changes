@@ -1,4 +1,7 @@
 
+- Fix for wrong --port option
+  [Martin Wendt]
+
 - Handle paths correctly for Windows related env
   [Martin Wendt]
 

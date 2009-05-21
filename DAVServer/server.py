@@ -250,6 +250,7 @@ def run():
         if daemonaction != 'stop':
             daemonaction = dv.daemonaction
         counter = int(dv.counter)
+        lockemulation = dv.lockemulation
         mimecheck = dv.mimecheck
 
     else:

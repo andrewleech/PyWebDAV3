@@ -1,4 +1,24 @@
 
+- Handle paths correctly for Windows related env
+  [Martin Wendt]
+
+- Included mimetype check for files
+  based on magic.py from Jason Petrone. Included
+  magic.py into this package. All magic.py code
+  (c) 2000 Jason Petrone. Included from
+  http://www.jsnp.net/code/magic.py.
+  [Joerg Friedrich, Simon Pamies]
+
+- Status check not working when server is running
+  [Joerg Friedrich]
+
+- Fixed wrong time formatting for Last-Modified
+  and creationdate (must follow RFC 822 and 3339)
+  [Cedric Krier]
+
+0.9.2 (May 11 2009)
+--
+
 - Fixed COPY, MOVE, DELETE to support locked
   resources
   [Simon Pamies]
@@ -19,23 +39,23 @@
   [Jesus Cea]
 
 - Make propfind respect the depth from queries
-  [Cédric Krier]
+  [Cedric Krier]
 
 - Add ETag in the header of GET. This is needed to implement 
   GroupDAV, CardDAV and CalDAV.
-  [Cédric Krier]
+  [Cedric Krier]
 
 - Handle the "Expect 100-continue" header
-  [Cédric Krier]
+  [Cedric Krier]
 
 - Remove debug statements and remove logging
-  [Cédric Krier]
+  [Cedric Krier]
 
 - Use the Host header in baseuri if set.
-  [Cédric Krier]
+  [Cedric Krier]
 
 - Adding If-Match on PUT and DELETE
-  [Cédric Krier]
+  [Cedric Krier]
 
 0.9.1 (May 4th 2009)
 --

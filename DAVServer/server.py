@@ -52,6 +52,7 @@ def runserver(
          server = BaseHTTPServer.HTTPServer):
 
     directory = directory.strip()
+    directory = directory.rstrip('/')
     host = host.strip()
    
     if not os.path.isdir(directory):
@@ -79,6 +80,14 @@ def runserver(
         handler.DO_AUTH = False
 
     print >>sys.stderr, '>> Serving data from %s' % directory
+
+    if handler._config.DAV.lockemulation is False:
+        print >>sys.stderr, '>> Deactivated LOCK, UNLOCK (WebDAV level 2) support'
+
+    handler.IFACE_CLASS.mimecheck = True
+    if handler._config.DAV.mimecheck is False:
+        handler.IFACE_CLASS.mimecheck = False
+        print >>sys.stderr, '>> Disabled mimetype sniffing (All files will have type application/octet-stream)'
    
     # initialize server on specified port
     runner = server( (host, port), handler )
@@ -95,7 +104,11 @@ def runserver(
         print >>sys.stderr, '\n>> Killed by user'
 
 usage = """PyWebDAV server (version %s)
-Standalone WebDAV server based on python
+Standalone WebDAV server
+
+Make sure to activate LOCK, UNLOCK using parameter -J if you want
+to use clients like Windows Explorer or Mac OS X Finder that expect
+LOCK working for write support.
 
 Usage: ./server.py [OPTIONS]
 Parameters:
@@ -117,6 +130,9 @@ Parameters:
                     file is mandatory.
     -J, --lockemu   Activate experimental LOCK and UNLOCK mode (WebDAV Version 2).
                     Currently know to work but needs more tests.
+    -M, --nomime    Deactivate mimetype sniffing. Sniffing is based on magic numbers
+                    detection but can be slow under heavy load. If you are experiencing
+                    speed problems try to use this parameter.
     -i, --icounter  If you want to run multiple instances then you have to
                     give each instance it own number so that logfiles and such
                     can be identified. Default is 0
@@ -160,12 +176,13 @@ def run():
     mysql = False
     lockemulation = False
     configfile = ''
+    mimecheck = True
     
     # parse commandline
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:', 
+        opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:M', 
                 ['host=', 'port=', 'directory=', 'user=', 'password=','daemon=', 'noauth', 'help', 'verbose', 
-                 'mysql', 'icounter=', 'config=', 'lockemu'])
+                 'mysql', 'icounter=', 'config=', 'lockemu', 'nomime'])
     except getopt.GetoptError, e:
         print usage
         print '>>>> ERROR: %s' % str(e)
@@ -177,6 +194,9 @@ def run():
 
         if o in ['-m', '--mysql']:
             mysql = True
+
+        if o in ['-M', '--nomime']:
+            mimecheck = False
 
         if o in ['-J', '--lockemu']:
             lockemulation = True
@@ -230,6 +250,7 @@ def run():
         if daemonaction != 'stop':
             daemonaction = dv.daemonaction
         counter = int(dv.counter)
+        mimecheck = dv.mimecheck
 
     else:
 
@@ -243,7 +264,8 @@ def run():
                 'daemonize' : daemonize,
                 'daemonaction' : daemonaction,
                 'counter' : counter,
-                'lockemulation' : lockemulation }
+                'lockemulation' : lockemulation,
+                'mimecheck' : mimecheck}
 
         conf = setupDummyConfig(**_dc)
 
@@ -272,7 +294,7 @@ def run():
     if daemonize:
 
         # check if pid file exists
-        if os.path.exists('/tmp/pydav%s.pid' % counter) and daemonaction != 'stop':
+        if os.path.exists('/tmp/pydav%s.pid' % counter) and daemonaction not in ['status', 'stop']:
             print >>sys.stderr, \
                   '>> ERROR: Found another instance! Either use -i to specifiy another instance number or remove /tmp/pydav%s.pid!' % counter
             sys.exit(3)

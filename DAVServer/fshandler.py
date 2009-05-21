@@ -11,6 +11,14 @@ from DAV.iface import *
 
 from DAV.davcmd import copyone, copytree, moveone, movetree, delone, deltree
 
+# include magic support to correctly determine mimetypes
+MAGIC_AVAILABLE = False
+try:
+    import magic
+    MAGIC_AVAILABLE = True
+except ImportError:
+    pass
+
 class FilesystemHandler(dav_interface):
     """ 
     Model a filesystem for DAV
@@ -56,13 +64,14 @@ class FilesystemHandler(dav_interface):
         uparts=urlparse.urlparse(uri)
         fileloc=uparts[2][1:]
         filename=os.path.join(self.directory,fileloc)
+        filename=os.path.normpath(filename)
         return filename
 
     def local2uri(self,filename):
         """ map local filename to self.baseuri """
 
-        pnum=len(split(self.directory,"/"))
-        parts=split(filename,"/")[pnum:]
+        pnum=len(split(self.directory.replace("\\","/"),"/"))
+        parts=split(filename.replace("\\","/"),"/")[pnum:]
         sparts="/"+joinfields(parts,"/")
         uri=urlparse.urljoin(self.baseuri,sparts)
         return uri
@@ -122,7 +131,6 @@ class FilesystemHandler(dav_interface):
         raise DAV_NotFound
         
     def _get_dav_displayname(self,uri):
-        #return uri
         raise DAV_Secret    # do not show
 
     def _get_dav_getcontentlength(self,uri):
@@ -161,7 +169,22 @@ class FilesystemHandler(dav_interface):
         path=self.uri2local(uri)
         if os.path.exists(path):
             if os.path.isfile(path):
-                return "application/octet-stream"
+                if MAGIC_AVAILABLE is False \
+                        or self.mimecheck is False:
+                    return 'application/octet-stream'
+                else:
+                    ret = magic.file(path)
+
+                    # for non mimetype related result we
+                    # simply return an appropriate type
+                    if ret.find('/')==-1:
+                        if ret.find('text')>=0:
+                            return 'text/plain'
+                        else:
+                            return 'application/octet-stream'
+                    else:
+                        return ret
+
             elif os.path.isdir(path):
                 return "httpd/unix-directory"
 

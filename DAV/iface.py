@@ -132,13 +132,13 @@ class dav_interface:
         """ return the creationdate of a resource """
         d=self.get_creationdate(uri)
         # format it
-        return time.strftime("%Y-%m-%dT%H:%M:%SZ",time.localtime(d))
+        return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(d))
 
     def _get_dav_getlastmodified(self,uri):
         """ return the last modified date of a resource """
         d=self.get_lastmodified(uri)
         # format it
-        return time.strftime("%a, %d %b %Y %H:%M:%S %Z",time.localtime(d))
+        return time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(d))
 
 
     ###

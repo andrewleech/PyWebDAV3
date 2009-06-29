@@ -32,17 +32,17 @@ class PROPFIND:
         self.nsmap={}
         self.proplist={}
         self.default_ns=None
-        self.__dataclass=dataclass
-        self.__depth=str(depth)
-        self.__uri=uri
-        self.__has_body=None    # did we parse a body?
+        self._dataclass=dataclass
+        self._depth=str(depth)
+        self._uri=uri.rstrip('/')
+        self._has_body=None    # did we parse a body?
 
         if dataclass.verbose:
             print >>sys.stderr, 'PROPFIND: Depth is %s, URI is %s' % (depth, uri)
 
         if body:
             self.request_type, self.proplist, self.namespaces = utils.parse_propfind(body)
-            self.__has_body = True
+            self._has_body = True
 
     def createResponse(self):
         """ Create the multistatus response 
@@ -60,7 +60,7 @@ class PROPFIND:
         """
 
         # check if resource exists
-        if not self.__dataclass.exists(self.__uri):
+        if not self._dataclass.exists(self._uri):
             raise DAV_NotFound
 
         df = None
@@ -83,29 +83,37 @@ class PROPFIND:
     def create_propname(self):
         """ create a multistatus response for the prop names """
         
-        dc=self.__dataclass
+        dc=self._dataclass
         # create the document generator
         doc = domimpl.createDocument(None, "multistatus", None)
         ms = doc.documentElement
         ms.setAttribute("xmlns:D", "DAV:")
         ms.tagName = 'D:multistatus'
 
-        if self.__depth=="0":
-            pnames=dc.get_propnames(self.__uri)
-            re=self.mk_propname_response(self.__uri,pnames, doc)
+        if self._depth=="0":
+            pnames=dc.get_propnames(self._uri)
+            re=self.mk_propname_response(self._uri,pnames, doc)
             ms.appendChild(re)
 
-        elif self.__depth=="1":
-            pnames=dc.get_propnames(self.__uri)
-            re=self.mk_propname_response(self.__uri,pnames, doc)
+        elif self._depth=="1":
+            pnames=dc.get_propnames(self._uri)
+            re=self.mk_propname_response(self._uri,pnames, doc)
             ms.appendChild(re)
         
-            for newuri in dc.get_childs(self.__uri):
+            for newuri in dc.get_childs(self._uri):
                 pnames=dc.get_propnames(newuri)
                 re=self.mk_propname_response(newuri,pnames, doc)
                 ms.appendChild(re)
-
-        # *** depth=="infinity"  
+        elif self._depth=='infinity':
+            uri_list = [self._uri]
+            while uri_list:
+                uri = uri_list.pop()
+                pnames=dc.get_propnames(uri)
+                re=self.mk_propname_response(uri,pnames, doc)
+                ms.appendChild(re)
+                uri_childs = self._dataclass.get_childs(uri)
+                if uri_childs:
+                    uri_list.extend(uri_childs)
 
         return doc.toxml(encoding="utf-8")
 
@@ -113,7 +121,7 @@ class PROPFIND:
         """ return a list of all properties """
         self.proplist={}
         self.namespaces=[]
-        for ns,plist in self.__dataclass.get_propnames(self.__uri).items():
+        for ns,plist in self._dataclass.get_propnames(self._uri).items():
             self.proplist[ns]=plist
             self.namespaces.append(ns)
         
@@ -148,20 +156,30 @@ class PROPFIND:
         ms.setAttribute("xmlns:D", "DAV:")
         ms.tagName = 'D:multistatus'
 
-        if self.__depth=="0":
-            gp,bp=self.get_propvalues(self.__uri)
-            res=self.mk_prop_response(self.__uri,gp,bp,doc)
+        if self._depth=="0":
+            gp,bp=self.get_propvalues(self._uri)
+            res=self.mk_prop_response(self._uri,gp,bp,doc)
             ms.appendChild(res)
         
-        elif self.__depth=="1":
-            gp,bp=self.get_propvalues(self.__uri)
-            res=self.mk_prop_response(self.__uri,gp,bp,doc)
+        elif self._depth=="1":
+            gp,bp=self.get_propvalues(self._uri)
+            res=self.mk_prop_response(self._uri,gp,bp,doc)
             ms.appendChild(res)
         
-            for newuri in self.__dataclass.get_childs(self.__uri):
+            for newuri in self._dataclass.get_childs(self._uri):
                 gp,bp=self.get_propvalues(newuri)
                 res=self.mk_prop_response(newuri,gp,bp,doc)
                 ms.appendChild(res)
+        elif self._depth=='infinity':
+            uri_list = [self._uri]
+            while uri_list:
+                uri = uri_list.pop()
+                gp,bp=self.get_propvalues(uri)
+                res=self.mk_prop_response(uri,gp,bp,doc)
+                ms.appendChild(res)
+                uri_childs = self._dataclass.get_childs(uri)
+                if uri_childs:
+                    uri_list.extend(uri_childs)
 
         return doc.toxml(encoding="utf-8")
 
@@ -240,11 +258,11 @@ class PROPFIND:
                     pe.appendChild(v)
                 else:
                     if p=="resourcetype":
-                        if v=="1":
+                        if v==1:
                             ve=doc.createElement("D:collection")
                             pe.appendChild(ve)
                     else:
-                        ve=doc.createTextNode(str(v))
+                        ve=doc.createTextNode(v)
                         pe.appendChild(ve)
 
                 gp.appendChild(pe)
@@ -294,7 +312,7 @@ class PROPFIND:
         good_props={}
         bad_props={}
 
-        ddc = self.__dataclass
+        ddc = self._dataclass
         for (ns,plist) in self.proplist.items():
             good_props[ns]={}
             bad_props={}
@@ -302,11 +320,7 @@ class PROPFIND:
                 ec = 0
                 try:
                     r=ddc.get_prop(uri,ns,prop)
-
-                    # support for element returns
-                    if hasattr(r, '__class__') and r.__class__.__name__ == 'Element':
-                        good_props[ns][prop]=r
-                    else: good_props[ns][prop]=str(r)
+                    good_props[ns][prop]=r
                 except DAV_Error, error_code:
                     ec=error_code[0]
                 

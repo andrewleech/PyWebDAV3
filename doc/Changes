@@ -1,4 +1,16 @@
 
+- Fix for PROPFIND to return *all* properties
+  [Cedric Krier]
+
+- Fixed do_PUT initialisation
+  [Cedric Krier]
+
+- Added REPORT support
+  [Cedric Krier]
+
+- Added support for gzip encoding
+  [Cedric Krier]
+
 - Fix for wrong --port option
   [Martin Wendt]
 

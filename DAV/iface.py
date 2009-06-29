@@ -72,7 +72,7 @@ class dav_interface:
             prefix=self.M_NS[ns]
         else:
             raise DAV_NotFound
-        mname=prefix+"_"+propname
+        mname=prefix+"_"+propname.replace('-', '_')
         try:
                 m=getattr(self,mname)
                 r=m(uri)

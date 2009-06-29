@@ -38,17 +38,17 @@ def parse_propfind(xml_doc):
         request_type = RT_PROPNAME
     else:
         request_type = RT_PROP
-        e = doc.getElementsByTagNameNS("DAV:", "prop")
-        for e in e[0].childNodes:
-            if e.nodeType != minidom.Node.ELEMENT_NODE:
-                continue
-            ns = e.namespaceURI
-            ename = e.localName
-            if props.has_key(ns):
-                props[ns].append(ename)
-            else:
-                props[ns]=[ename]
-                namespaces.append(ns)
+        for i in doc.getElementsByTagNameNS("DAV:", "prop"):
+            for e in i.childNodes:
+                if e.nodeType != minidom.Node.ELEMENT_NODE:
+                    continue
+                ns = e.namespaceURI
+                ename = e.localName
+                if props.has_key(ns):
+                    props[ns].append(ename)
+                else:
+                    props[ns]=[ename]
+                    namespaces.append(ns)
 
     return request_type,props,namespaces
 

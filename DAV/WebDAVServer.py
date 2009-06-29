@@ -43,6 +43,7 @@ import urllib
 import random
 
 from propfind import PROPFIND
+from report import REPORT
 from delete import DELETE
 from davcopy import COPY
 from davmove import MOVE
@@ -53,6 +54,8 @@ from errors import *
 
 from constants import DAV_VERSION_1, DAV_VERSION_2
 from locks import LockManager
+import gzip
+import StringIO
 
 class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     """Simple DAV request handler with 
@@ -64,6 +67,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     - PROPFIND
     - PROPPATCH
     - MKCOL
+    - REPORT
 
     experimental
     - LOCK
@@ -75,6 +79,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     """
 
     server_version = "DAV/" + __version__
+    encode_threshold = 1400 # common MTU
 
     ### utility functions
     def _log(self, message):
@@ -92,6 +97,16 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             self.send_header(a,v)
         
         if DATA:
+            if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
+                    and len(DATA) > self.encode_threshold:
+                buffer = StringIO.StringIO()
+                output = gzip.GzipFile(mode='wb', fileobj=buffer)
+                output.write(DATA)
+                output.close()
+                buffer.seek(0)
+                DATA = buffer.getvalue()
+                self.send_header('Content-Encoding', 'gzip')
+
             self.send_header('Content-Length', len(DATA))
             self.send_header('Content-Type', ctype)
         else:
@@ -110,6 +125,17 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_header("Connection", "close")
         self.send_header("Transfer-Encoding", "chunked")
         self.send_header('Date', rfc1123_date())
+
+        if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
+                and len(DATA) > self.encode_threshold:
+                buffer = StringIO.StringIO()
+                output = gzip.GzipFile(mode='wb', fileobj=buffer)
+                output.write(DATA)
+                output.close()
+                buffer.seek(0)
+                DATA = buffer.getvalue()
+                self.send_header('Content-Encoding', 'gzip')
+
         self.end_headers()
 
         self._append(hex(len(DATA))[2:]+"\r\n")
@@ -231,6 +257,30 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         self.send_body_chunks(DATA, '207','Multi-Status','Multiple responses')
 
+    def do_REPORT(self):
+        """ Query properties on defined resource. """
+
+        dc = self.IFACE_CLASS
+
+        # read the body containing the xml request
+        # iff there is no body then this is an ALLPROP request
+        body = None
+        if self.headers.has_key('Content-Length'):
+            l = self.headers['Content-Length']
+            body = self.rfile.read(atoi(l))
+
+        uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
+        uri = urllib.unquote(uri)
+
+        rp = REPORT(uri, dc, self.headers.get('Depth', 'infinity'), body)
+
+        try:
+            DATA = '%s\n' % rp.createResponse()
+        except DAV_Error, (ec,dd):
+            return self.send_status(ec)
+
+        self.send_body_chunks(DATA, '207','Multi-Status','Multiple responses')
+
     def do_MKCOL(self):
         """ create a new collection """
 
@@ -308,6 +358,8 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
     def do_PUT(self):
         dc=self.IFACE_CLASS
+        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
+        uri=urllib.unquote(uri)
 
         # Handle If-Match
         if self.headers.has_key('If-Match'):
@@ -364,8 +416,6 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         if self.headers.has_key("Content-Length"):
             l=self.headers['Content-Length']
             body=self.rfile.read(atoi(l))
-        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri=urllib.unquote(uri)
 
         # locked resources are not allowed to be overwritten
         if self._l_isLocked(uri):

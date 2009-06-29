@@ -129,7 +129,7 @@ Parameters:
                     If you want to use MySQL then the usage of a configuration
                     file is mandatory.
     -J, --lockemu   Activate experimental LOCK and UNLOCK mode (WebDAV Version 2).
-                    Currently know to work but needs more tests.
+                    Currently know to work but needs more tests. Default is ON.
     -M, --nomime    Deactivate mimetype sniffing. Sniffing is based on magic numbers
                     detection but can be slow under heavy load. If you are experiencing
                     speed problems try to use this parameter.
@@ -174,7 +174,7 @@ def run():
     daemonaction = 'start'
     counter = 0
     mysql = False
-    lockemulation = False
+    lockemulation = True
     configfile = ''
     mimecheck = True
     

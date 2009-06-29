@@ -1,4 +1,8 @@
 
+- Setting WebDAV v2 as default because LOCK and UNLOCK seem
+  to be stable by now. -J parameter is ignored and will go away.
+  [Simon Pamies]
+
 - Fix for PROPFIND to return *all* properties
   [Cedric Krier]
 

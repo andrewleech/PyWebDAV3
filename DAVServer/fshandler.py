@@ -1,9 +1,9 @@
-
 import sys
 import urlparse
 import os
 import time
 from string import joinfields, split, lower
+import types
 
 from DAV.constants import COLLECTION, OBJECT
 from DAV.errors import *
@@ -190,12 +190,17 @@ class FilesystemHandler(dav_interface):
 
         raise DAV_NotFound, 'Could not find %s' % path
 
-    def put(self,uri,data,content_type=None):
+    def put(self, uri, data, content_type=None):
         """ put the object into the filesystem """
         path=self.uri2local(uri)
         try:
-            fp=open(path,"w+")
-            fp.write(data)
+            fp=open(path, "w+")
+            if isinstance(data, types.GeneratorType):
+                for d in data:
+                    fp.write(d)
+            else:
+                if data:
+                    fp.write(data)
             fp.close()
             self._log('put: Created %s' % uri)
         except:
@@ -409,4 +414,3 @@ class FilesystemHandler(dav_interface):
             return 1
         else:
             return 0
-

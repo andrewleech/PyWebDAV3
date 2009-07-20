@@ -48,7 +48,7 @@ from delete import DELETE
 from davcopy import COPY
 from davmove import MOVE
 
-from utils import rfc1123_date
+from utils import rfc1123_date, IfParser, tokenFinder
 from string import atoi,split
 from errors import *
 
@@ -403,6 +403,33 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 self.send_status(412)
                 return
 
+        # locked resources are not allowed to be overwritten
+        ifheader = self.headers.get('If')
+        if (
+            (self._l_isLocked(uri)) and
+            (not ifheader)
+        ):
+            return self.send_body(None, '423', 'Locked', 'Locked')
+        
+        if ((self._l_isLocked(uri)) and (ifheader)):
+            uri_token = self._l_getLockForUri(uri)
+            taglist = IfParser(ifheader)
+            found = False
+            for tag in taglist:
+                for listitem in tag.list:
+                    token = tokenFinder(listitem)
+                    if (
+                        token and 
+                        (self._l_hasLock(token)) and
+                        (self._l_getLock(token) == uri_token)
+                    ):
+                        found = True
+                        break
+                if found:
+                    break
+            if not found:
+                return self.send_body(None, '423', 'Locked', 'Locked')
+
         # Handle expect
         expect = self.headers.get('Expect', '')
         if (expect.lower() == '100-continue' and
@@ -411,35 +438,51 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             self.send_status(100)
             self._flush()
 
-        # read the body
-        body=None
-        if self.headers.has_key("Content-Length"):
-            l=self.headers['Content-Length']
-            body=self.rfile.read(atoi(l))
-
-        # locked resources are not allowed to be overwritten
-        if self._l_isLocked(uri):
-            return self.send_body(None, '423', 'Locked', 'Locked')
-
-        ct=None
+        content_type = None
         if self.headers.has_key("Content-Type"):
-            ct=self.headers['Content-Type']
-        try:
-            location = dc.put(uri,body,ct)
-        except DAV_Error, (ec,dd):
-            return self.send_status(ec)
+            content_type = self.headers['Content-Type']
 
         headers = {}
-        if location:
-            headers['Location'] = location
+        headers['Location'] = uri
 
         try:
-            etag = dc.get_prop(location or uri, "DAV:", "getetag")
+            etag = dc.get_prop(uri, "DAV:", "getetag")
             headers['ETag'] = etag
         except:
             pass
 
-        self.send_body(None, '201', 'Created', '', headers=headers)
+        expect = self.headers.get('transfer-encoding', '')
+        if (
+            expect.lower() == 'chunked' and
+            self.protocol_version >= 'HTTP/1.1' and
+            self.request_version >= 'HTTP/1.1'
+        ):
+            self.send_body(None, '201', 'Created', '', headers=headers)
+            self._flush()
+
+            dc.put(uri, self._readChunkedData(), content_type)
+        else:
+            # read the body
+            body=None
+            if self.headers.has_key("Content-Length"):
+                l=self.headers['Content-Length']
+                body=self.rfile.read(atoi(l))
+
+            try:
+                dc.put(uri, body, content_type)
+            except DAV_Error, (ec,dd):
+                return self.send_status(ec)
+
+
+            self.send_body(None, '201', 'Created', '', headers=headers)
+
+    def _readChunkedData(self):
+        l = int(self.rfile.readline(), 16)
+        while l > 0:
+            buf = self.rfile.read(l)
+            yield buf
+            self.rfile.readline()
+            l = int(self.rfile.readline(), 16)
 
     def do_COPY(self):
         """ copy one resource to another """
@@ -525,7 +568,9 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     def send_status(self,code=200,mediatype='text/xml;  charset="utf-8"', \
                                 msg=None,body=None):
 
-        if not msg: msg=self.responses[code][1]
+        if not msg: 
+            msg=self.responses[code][1]
+
         self.send_body(body,code,self.responses[code][0],msg,mediatype)
 
     def get_baseuri(self, dc):

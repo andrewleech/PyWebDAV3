@@ -40,6 +40,12 @@ class BufferedHTTPRequestHandler(BaseHTTPRequestHandler):
 
     """
 
+    responses = dict(
+        BaseHTTPRequestHandler.responses.items() +
+        {
+            424: ('Failed Dependency', 'The request failed due to failure of a previous request')
+        }.items()
+    )
 
     def _init_buffer(self):
         """initialize the buffer. 

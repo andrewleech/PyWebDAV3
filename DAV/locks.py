@@ -1,4 +1,3 @@
-
 import os
 import sys
 import time
@@ -10,6 +9,7 @@ import urlparse
 import urllib
 import random
 
+import xml.dom
 from xml.dom import minidom
 
 from utils import rfc1123_date, IfParser, tokenFinder
@@ -135,7 +135,7 @@ class LockManager:
                 lock = self._l_getLock(token)
                 self.send_body(lock.asXML(), '200', 'OK', 'OK', 
                                 'text/xml; charset="utf-8"',
-                                {'Lock-Token' : 'opaquelocktoken:%s' % token})
+                                {'Lock-Token' : '<opaquelocktoken:%s>' % token})
 
 
         else:
@@ -206,6 +206,12 @@ class LockItem:
         self.modified = time.time()
 
     def asXML(self, namespace='d', discover=False):
+        owner_str = ''
+        if isinstance(self.owner, str):
+            owner_str = self.owner
+        elif isinstance(self.owner, xml.dom.minicompat.NodeList):
+            owner_str = "".join([node.toxml() for node in self.owner[0].childNodes])
+
         token = self.token
         base = ('<%(ns)s:activelock>\n'
              '  <%(ns)s:locktype><%(ns)s:%(locktype)s/></%(ns)s:locktype>\n'
@@ -222,7 +228,7 @@ class LockItem:
                'locktype': self.locktype,
                'lockscope': self.lockscope,
                'depth': self.depth,
-               'owner': self.owner and self.owner or '',
+               'owner': owner_str,
                'timeout': self.getTimeoutString(),
                'locktoken': token,
                }

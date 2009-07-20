@@ -1,3 +1,5 @@
+- Fix issue 14 : config.ini boolean parameter reading issue
+  [Stephane Klein]
 
 0.9.3 (July 2 2009)
 --

@@ -152,8 +152,8 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_response(200)
         self.send_header("Content-Length", 0)
 
-        if self._config.DAV.lockemulation is True:
-            if self._config.DAV.verbose is True:
+        if self._config.DAV.getboolean('lockemulation') is True:
+            if self._config.DAV.getboolean('verbose') is True:
                 print >>sys.stderr, 'Activated LOCK,UNLOCK emulation (experimental)'
 
             self.send_header('Allow', DAV_VERSION_2['options'])

@@ -84,7 +84,7 @@ class LockManager:
 
         dc = self.IFACE_CLASS
 
-        if self._config.DAV.verbose is True:
+        if self._config.DAV.getboolean('verbose') is True:
             print >>sys.stderr, 'UNLOCKing resource %s' % self.headers
 
         uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
@@ -101,7 +101,7 @@ class LockManager:
 
         dc = self.IFACE_CLASS
 
-        if self._config.DAV.verbose is True:
+        if self._config.DAV.getboolean('verbose') is True:
             print >>sys.stderr, 'LOCKing resource %s' % self.headers
 
         body = None

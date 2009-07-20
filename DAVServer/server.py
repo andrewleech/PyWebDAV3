@@ -81,11 +81,11 @@ def runserver(
 
     print >>sys.stderr, '>> Serving data from %s' % directory
 
-    if handler._config.DAV.lockemulation is False:
+    if handler._config.DAV.getboolean('lockemulation') is False:
         print >>sys.stderr, '>> Deactivated LOCK, UNLOCK (WebDAV level 2) support'
 
     handler.IFACE_CLASS.mimecheck = True
-    if handler._config.DAV.mimecheck is False:
+    if handler._config.DAV.getboolean('mimecheck') is False:
         handler.IFACE_CLASS.mimecheck = False
         print >>sys.stderr, '>> Disabled mimetype sniffing (All files will have type application/octet-stream)'
    

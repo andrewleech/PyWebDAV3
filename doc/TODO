@@ -6,7 +6,9 @@ GENERAL
 	- News
 	- TODO list
 	- Changes
-	- Name
+    - Name
+
+- create WSGI server version [Stephane Klein]
 
 MOVE
 ----
@@ -34,3 +36,9 @@ PROPPATCH
 to be done (not that important as only DAV props are supported right now which
 you cannot change)
 
+
+TEST
+----
+
+- create some unit test
+- maybe use davclient package to make the tests

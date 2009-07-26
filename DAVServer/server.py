@@ -23,6 +23,11 @@ This is an example implementation of a DAVserver using the DAV package.
 """
 
 import getopt, sys, os
+import logging
+
+logging.basicConfig(level=logging.WARNING)
+log = logging.getLogger('pywebdav')
+
 import BaseHTTPServer
 
 try:
@@ -41,6 +46,12 @@ from fshandler import FilesystemHandler
 from daemonize import startstop
 from DAV.INI_Parse import Configuration
 
+LEVELS = {'debug': logging.DEBUG,
+          'info': logging.INFO,
+          'warning': logging.WARNING,
+          'error': logging.ERROR,
+          'critical': logging.CRITICAL}
+
 def runserver(
          port = 8008, host='localhost',
          directory='/tmp',
@@ -56,17 +67,17 @@ def runserver(
     host = host.strip()
    
     if not os.path.isdir(directory):
-        print >>sys.stderr, '>> ERROR: %s is not a valid directory!' % directory
+        log.error('%s is not a valid directory!' % directory)
         return sys.exit(233)
     
     # basic checks against wrong hosts
     if host.find('/') != -1 or host.find(':') != -1:
-        print >>sys.stderr, '>> ERROR: Malformed host %s' % host
+        log.error('Malformed host %s' % host)
         return sys.exit(233)
 
     # no root directory
     if directory == '/':
-        print >>sys.stderr, '>> ERROR: Root directory not allowed!'
+        log.error('Root directory not allowed!')
         sys.exit(233)
         
     # dispatch directory and host to the filesystem handler
@@ -76,32 +87,27 @@ def runserver(
     # put some extra vars
     handler.verbose = verbose
     if noauth:
-        print >>sys.stderr, '>> ATTENTION: Authentication disabled!'
+        log.warning('Authentication disabled!')
         handler.DO_AUTH = False
 
-    print >>sys.stderr, '>> Serving data from %s' % directory
+    log.info('Serving data from %s' % directory)
 
     if handler._config.DAV.getboolean('lockemulation') is False:
-        print >>sys.stderr, '>> Deactivated LOCK, UNLOCK (WebDAV level 2) support'
+        log.info('Deactivated LOCK, UNLOCK (WebDAV level 2) support')
 
     handler.IFACE_CLASS.mimecheck = True
     if handler._config.DAV.getboolean('mimecheck') is False:
         handler.IFACE_CLASS.mimecheck = False
-        print >>sys.stderr, '>> Disabled mimetype sniffing (All files will have type application/octet-stream)'
+        log.info('Disabled mimetype sniffing (All files will have type application/octet-stream)')
    
     # initialize server on specified port
     runner = server( (host, port), handler )
-    print >>sys.stderr, '>> Listening on %s (%i)' % (host, port)
-
-    if verbose:
-        print >>sys.stderr, '>> Verbose mode ON'
-
-    print ''
+    print('Listening on %s (%i)' % (host, port))
 
     try:
         runner.serve_forever()
     except KeyboardInterrupt:
-        print >>sys.stderr, '\n>> Killed by user'
+        log.info('Killed by user')
 
 usage = """PyWebDAV server (version %s)
 Standalone WebDAV server
@@ -146,6 +152,8 @@ Parameters:
                         status  - Returns status of server
                         
     -v, --verbose   Be verbose
+    -l, --loglevel  Select the log level : DEBUG, INFO, WARNING, ERROR, CRITICAL
+                    Default is WARNING
     -h, --help      Show this screen
     
 Please send bug reports and feature requests to %s
@@ -177,12 +185,14 @@ def run():
     lockemulation = True
     configfile = ''
     mimecheck = True
+    loglevel = 'warning'
     
     # parse commandline
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:M', 
-                ['host=', 'port=', 'directory=', 'user=', 'password=','daemon=', 'noauth', 'help', 'verbose', 
-                 'mysql', 'icounter=', 'config=', 'lockemu', 'nomime'])
+        opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:Ml:',
+                ['host=', 'port=', 'directory=', 'user=', 'password=',
+                 'daemon=', 'noauth', 'help', 'verbose', 'mysql', 
+                 'icounter=', 'config=', 'lockemu', 'nomime', 'loglevel'])
     except getopt.GetoptError, e:
         print usage
         print '>>>> ERROR: %s' % str(e)
@@ -216,6 +226,9 @@ def run():
         if o in ['-v', '--verbose']:
             verbose = True
 
+        if o in ['-l', '--loglevel']:
+            loglevel = a.lower()
+
         if o in ['-h', '--help']:
             print usage
             sys.exit(2)
@@ -235,11 +248,12 @@ def run():
 
     conf = None
     if configfile != '':
-        print >>sys.stderr, 'Reading configuration from %s' % configfile
+        log.info('Reading configuration from %s' % configfile)
         conf = Configuration(configfile)
 
         dv = conf.DAV
         verbose = bool(int(dv.verbose))
+        loglevel = dv.get('loglevel', loglevel).lower()
         directory = dv.directory
         port = dv.port
         host = dv.host
@@ -270,14 +284,19 @@ def run():
 
         conf = setupDummyConfig(**_dc)
 
+    if verbose and (LEVELS[loglevel] > LEVELS['info']):
+        loglevel = 'info'
+
+    logging.getLogger().setLevel(LEVELS[loglevel])
+
     if mysql == True and configfile == '':
-        print >>sys.stderr, '>> ERROR: You can only use MySQL with configuration file!'
+        log.error('You can only use MySQL with configuration file!')
         sys.exit(3)
 
     if daemonaction != 'stop':
-        print >>sys.stderr, 'Starting up PyWebDAV server (version %s)' % __version__
+        log.info('Starting up PyWebDAV server (version %s)' % __version__)
     else:
-        print >>sys.stderr, 'Stopping PyWebDAV server (version %s)' % __version__
+        log.info('Stopping PyWebDAV server (version %s)' % __version__)
 
     if not noauth and daemonaction not in ['status', 'stop']:
         if not user:
@@ -287,7 +306,7 @@ def run():
             sys.exit(3)
   
     if daemonaction == 'status':
-        print >>sys.stdout, 'Checking for state...'
+        log.info('Checking for state...')
    
     if type(port) == type(''):
         port = int(port.strip())
@@ -296,8 +315,8 @@ def run():
 
         # check if pid file exists
         if os.path.exists('/tmp/pydav%s.pid' % counter) and daemonaction not in ['status', 'stop']:
-            print >>sys.stderr, \
-                  '>> ERROR: Found another instance! Either use -i to specifiy another instance number or remove /tmp/pydav%s.pid!' % counter
+            log.error(
+                  'Found another instance! Either use -i to specifiy another instance number or remove /tmp/pydav%s.pid!' % counter)
             sys.exit(3)
 
         startstop(stdout='/tmp/pydav%s.log' % counter, 
@@ -314,7 +333,8 @@ def run():
     # injecting options
     handler._config = conf
 
-    runserver(port, host, directory, verbose, noauth, user, password, handler=handler)
+    runserver(port, host, directory, verbose, noauth, user, password, 
+              handler=handler)
 
 if __name__ == '__main__':
     run()

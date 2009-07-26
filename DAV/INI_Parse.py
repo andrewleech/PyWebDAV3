@@ -35,6 +35,15 @@ class Section:
     def getboolean(self, name):
         return self.__parser.getboolean(self.name, name)
 
+    def __contains__(self, name):
+        return self.__parser.has_option(self.name, name)
+
+    def get(self, name, default):
+        if name in self:
+            return self.__getattr__(name)
+        else:
+            return default
+
 # Test
 if __name__ == '__main__':
     c = Configuration('Importador.ini')

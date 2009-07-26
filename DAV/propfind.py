@@ -2,6 +2,7 @@
 import xml.dom.minidom
 domimpl = xml.dom.minidom.getDOMImplementation()
 
+import logging
 import sys
 import string
 import urlparse
@@ -11,6 +12,8 @@ from StringIO import StringIO
 import utils
 from constants import COLLECTION, OBJECT, DAV_PROPS, RT_ALLPROP, RT_PROPNAME, RT_PROP
 from errors import *
+
+log = logging.getLogger(__name__)
 
 class PROPFIND:
     """ parse a propfind xml element and extract props 
@@ -38,7 +41,7 @@ class PROPFIND:
         self._has_body=None    # did we parse a body?
 
         if dataclass.verbose:
-            print >>sys.stderr, 'PROPFIND: Depth is %s, URI is %s' % (depth, uri)
+            log.info('PROPFIND: Depth is %s, URI is %s' % (depth, uri))
 
         if body:
             self.request_type, self.proplist, self.namespaces = utils.parse_propfind(body)

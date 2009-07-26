@@ -1,3 +1,7 @@
+import logging
+
+log = logging.getLogger(__name__)
+
 try:
     import MySQLdb
 except ImportError:
@@ -9,7 +13,7 @@ class Mconn:
 	def connect(self,username,userpasswd,host,port,db):
 		try: connection = MySQLdb.connect(host=host, port=int(port), user=username, passwd=userpasswd,db=db)
 		except MySQLdb.OperationalError, message:   
-			print >>sys.stderr,"Error %d:\n%s" % (message[ 0 ], message[ 1 ] )  
+			log.error("%d:\n%s" % (message[ 0 ], message[ 1 ] ))
 			return 0
 		else:
 			self.db = connection.cursor()
@@ -20,15 +24,15 @@ class Mconn:
 		if self.db:
 			try: res=self.db.execute(qry)
 			except MySQLdb.OperationalError, message:   
-				print >>sys.stderr, "Error %d:\n%s" % (message[ 0 ], message[ 1 ] )
+				log.error("Error %d:\n%s" % (message[ 0 ], message[ 1 ] ))
 				return 0
 				
 			except MySQLdb.ProgrammingError, message:   
-				print >>sys.stderr,"Error %d:\n%s" % (message[ 0 ], message[ 1 ] )
+				log.error("Error %d:\n%s" % (message[ 0 ], message[ 1 ] ))
 				return 0
 				
 			else:
-				print >>sys.stderr,'Query Returned '+str(res)+' results'
+				log.debug('Query Returned '+str(res)+' results')
 				return self.db.fetchall()
 	
 	def create_user(self,user,passwd):
@@ -38,7 +42,7 @@ class Mconn:
 			qry="insert into Users (User,Pass) values('%s','%s')"%(user,passwd)
 			res=self.execute(qry)
 		else:
-			print >>sys.stderr, "Username already in use"
+			log.debug("Username already in use")
 			
 	def create_table(self):
 		qry="""CREATE TABLE `Users` (                    

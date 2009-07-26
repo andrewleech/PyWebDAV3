@@ -9,6 +9,10 @@ import urlparse
 import urllib
 import random
 
+import logging
+
+log = logging.getLogger(__name__)
+
 import xml.dom
 from xml.dom import minidom
 
@@ -85,7 +89,7 @@ class LockManager:
         dc = self.IFACE_CLASS
 
         if self._config.DAV.getboolean('verbose') is True:
-            print >>sys.stderr, 'UNLOCKing resource %s' % self.headers
+            log.info('UNLOCKing resource %s' % self.headers)
 
         uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.unquote(uri)
@@ -101,8 +105,7 @@ class LockManager:
 
         dc = self.IFACE_CLASS
 
-        if self._config.DAV.getboolean('verbose') is True:
-            print >>sys.stderr, 'LOCKing resource %s' % self.headers
+        log.debug('LOCKing resource %s' % self.headers)
 
         body = None
         if self.headers.has_key('Content-Length'):
@@ -113,9 +116,11 @@ class LockManager:
 
         uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.unquote(uri)
+        log.debug('do_LOCK: uri = %s' % uri)
 
         ifheader = self.headers.get('If')
         alreadylocked = self._l_isLocked(uri)
+        log.debug('do_LOCK: alreadylocked = %s' % alreadylocked)
 
         if body and alreadylocked:
             # Full LOCK request but resource already locked

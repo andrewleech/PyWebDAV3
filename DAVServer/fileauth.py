@@ -22,11 +22,14 @@ This is an example implementation of a DAVserver using the DAV package.
 
 """
 
+import logging
 
 from DAV.WebDAVServer import DAVRequestHandler
 from fshandler import FilesystemHandler
 import sys
 from DAV.dbconn import Mconn
+
+log = logging.getLogger()
 
 class DAVAuthHandler(DAVRequestHandler):
     """
@@ -41,15 +44,15 @@ class DAVAuthHandler(DAVRequestHandler):
     
     def _log(self, message):
         if self.verbose:
-            print >>sys.stderr, '>> (DAVAuthHandler) %s' % message
+            log.info(message)
 
     def get_userinfo(self,user,pw,command):
         """ authenticate user """
 
         if user == self._config.DAV.user and pw == self._config.DAV.password:
-            self._log('Successfully authenticated user %s' % user)
+            log.info('Successfully authenticated user %s' % user)
             return 1
 
-        self._log('Authentication failed for user %s' % user)
+        log.info('Authentication failed for user %s' % user)
         return 0
 

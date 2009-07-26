@@ -1,3 +1,6 @@
+- Enhance logging mechanism
+  [Stephane Klein]
+
 - Fix issue 15 : I've error when I execute PUT action with Apple Finder client
   [Stephane Klein]
 

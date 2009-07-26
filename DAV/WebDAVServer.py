@@ -41,6 +41,7 @@ import AuthServer
 import urlparse
 import urllib
 import random
+import logging
 
 from propfind import PROPFIND
 from report import REPORT
@@ -56,6 +57,8 @@ from constants import DAV_VERSION_1, DAV_VERSION_2
 from locks import LockManager
 import gzip
 import StringIO
+
+log = logging.getLogger(__name__)
 
 class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     """Simple DAV request handler with 
@@ -80,10 +83,6 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
     server_version = "DAV/" + __version__
     encode_threshold = 1400 # common MTU
-
-    ### utility functions
-    def _log(self, message):
-        pass
 
     def send_body(self,DATA,code,msg,desc,ctype='application/octet-stream',headers={}):
         """ send a body in one part """
@@ -154,7 +153,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         if self._config.DAV.getboolean('lockemulation') is True:
             if self._config.DAV.getboolean('verbose') is True:
-                print >>sys.stderr, 'Activated LOCK,UNLOCK emulation (experimental)'
+                log.info('Activated LOCK,UNLOCK emulation (experimental)')
 
             self.send_header('Allow', DAV_VERSION_2['options'])
             self.send_header('DAV', DAV_VERSION_2['version'])
@@ -361,14 +360,20 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
 
+        log.debug("do_PUT: uri = %s" % uri)
+        log.debug('do_PUT: headers = %s' % self.headers)
         # Handle If-Match
         if self.headers.has_key('If-Match'):
+            log.debug("do_PUT: If-Match %s" % self.headers['If-Match'])
             test = False
             etag = None
             try:
                 etag = dc.get_prop(uri, "DAV:", "getetag")
             except:
                 pass
+
+            log.debug("do_PUT: etag = %s" % etag)
+            
             for match in self.headers['If-Match'].split(','):
                 if match == '*':
                     if dc.exists(uri):
@@ -384,12 +389,17 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         # Handle If-None-Match
         if self.headers.has_key('If-None-Match'):
+            log.debug("do_PUT: If-None-Match %s" % self.headers['If-None-Match'])
+            
             test = True
             etag = None
             try:
                 etag = dc.get_prop(uri, "DAV:", "getetag")
             except:
                 pass
+
+            log.debug("do_PUT: etag = %s" % etag)
+
             for match in self.headers['If-None-Match'].split(','):
                 if match == '*':
                     if dc.exists(uri):
@@ -466,6 +476,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             body=None
             if self.headers.has_key("Content-Length"):
                 l=self.headers['Content-Length']
+                log.debug("do_PUT: Content-Length = %s" % l)
                 body=self.rfile.read(atoi(l))
 
             try:

@@ -971,7 +971,6 @@ class magicTest:
     return None
 
   def compare(self, data):
-    #print str([self.type, self.value, self.msg])
     try: 
       if self.type == 'string':
         c = ''; s = ''

@@ -3,6 +3,7 @@ import urlparse
 import os
 import time
 from string import joinfields, split, lower
+import logging
 import types
 
 from DAV.constants import COLLECTION, OBJECT
@@ -10,6 +11,8 @@ from DAV.errors import *
 from DAV.iface import *
 
 from DAV.davcmd import copyone, copytree, moveone, movetree, delone, deltree
+
+log = logging.getLogger(__name__)
 
 # include magic support to correctly determine mimetypes
 MAGIC_AVAILABLE = False
@@ -39,11 +42,7 @@ class FilesystemHandler(dav_interface):
 
         # should we be verbose?
         self.verbose = verbose
-        self._log('Initialized with %s-%s' % (directory, uri))
-
-    def _log(self, message):
-        if self.verbose:
-            print >>sys.stderr, '>> (FilesystemHandler) %s' % message
+        log.info('Initialized with %s-%s' % (directory, uri))
 
     def setDirectory(self, path):
         """ Sets the directory """
@@ -94,7 +93,7 @@ class FilesystemHandler(dav_interface):
                     newloc=os.path.join(fileloc,file)
                     filelist.append(self.local2uri(newloc))
      
-                self._log('get_childs: Childs %s' % filelist)
+                log.info('get_childs: Childs %s' % filelist)
 
         return filelist
 
@@ -110,12 +109,12 @@ class FilesystemHandler(dav_interface):
                     if not a: break
                     s=s+a
                 fp.close()
-                self._log('Serving content of %s' % uri)
+                log.info('Serving content of %s' % uri)
                 return s
             else:
                 # also raise an error for collections
                 # don't know what should happen then..
-                self._log('get_data: %s not found' % path)
+                log.info('get_data: %s not found' % path)
         
         raise DAV_NotFound
 
@@ -202,9 +201,9 @@ class FilesystemHandler(dav_interface):
                 if data:
                     fp.write(data)
             fp.close()
-            self._log('put: Created %s' % uri)
+            log.info('put: Created %s' % uri)
         except:
-            self._log('put: Could not create %s' % uri)
+            log.info('put: Could not create %s' % uri)
             raise DAV_Error, 424
 
         return None
@@ -228,10 +227,10 @@ class FilesystemHandler(dav_interface):
         # test, if we are allowed to create it
         try:
             os.system("mkdir '%s'" % path)
-            self._log('mkcol: Created new collection %s' % path)
+            log.info('mkcol: Created new collection %s' % path)
             return 201
         except:
-            self._log('mkcol: Creation of %s denied' % path)
+            log.info('mkcol: Creation of %s denied' % path)
             raise DAV_Forbidden
 
     ### ?? should we do the handler stuff for DELETE, too ?
@@ -256,7 +255,7 @@ class FilesystemHandler(dav_interface):
         if not os.system("rm -f '%s'" %path):
             return 204
         else:
-            self._log('rm: Forbidden')
+            log.info('rm: Forbidden')
             raise DAV_Forbidden # forbidden
 
     ###
@@ -385,7 +384,7 @@ class FilesystemHandler(dav_interface):
         try:
             os.system("cp '%s' '%s'" %(srcfile,dstfile))
         except:
-            self._log('copy: forbidden')
+            log.info('copy: forbidden')
             raise DAV_Error, Forbidden
 
     def copycol(self,src,dst):

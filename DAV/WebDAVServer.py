@@ -115,7 +115,13 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         if DATA:
             self._append(DATA)
 
-    def send_body_chunks(self,DATA,code,msg,desc,ctype='text/xml; encoding="utf-8"'):
+    def send_body_chunks_if_http11(self, DATA, code, msg, desc, ctype='text/xml; encoding="utf-8"'):
+        if self.request_version == 'HTTP/1.0':
+            self.send_body(DATA, code, msg, desc, ctype)
+        else:
+            self.send_body_chunks(DATA, code, msg, desc, ctype)
+
+    def send_body_chunks(self, DATA, code, msg, desc, ctype='text/xml; encoding="utf-8"'):
         """ send a body in chunks """
         
         self.responses[207]=(msg,desc)
@@ -254,7 +260,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             DATA = DATA.replace('<ns0:creationdate xmlns:ns0="DAV:">',
                                     '<ns0:creationdate xmlns:n="DAV:" xmlns:b="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/" b:dt="dateTime.tz">')
 
-        self.send_body_chunks(DATA, '207','Multi-Status','Multiple responses')
+        self.send_body_chunks_if_http11(DATA, '207','Multi-Status','Multiple responses')
 
     def do_REPORT(self):
         """ Query properties on defined resource. """
@@ -278,7 +284,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         except DAV_Error, (ec,dd):
             return self.send_status(ec)
 
-        self.send_body_chunks(DATA, '207','Multi-Status','Multiple responses')
+        self.send_body_chunks_if_http11(DATA, '207','Multi-Status','Multiple responses')
 
     def do_MKCOL(self):
         """ create a new collection """
@@ -565,7 +571,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 return
 
         if res:
-            self.send_body_chunks(res,207,self.responses[207][0],
+            self.send_body_chunks_if_http11(res,207,self.responses[207][0],
                             self.responses[207][1],
                             ctype='text/xml; charset="utf-8"')
         else:

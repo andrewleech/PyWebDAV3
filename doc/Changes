@@ -1,3 +1,6 @@
+- Print User-Agent information in log request.
+  [Stephane Klein]
+
 - Fix issue 13 : return http 1.0 compatible response (not chunked) when 
                  request http version is 1.0
   [cliff.wells]

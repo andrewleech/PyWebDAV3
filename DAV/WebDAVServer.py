@@ -597,3 +597,8 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             uparts[1] = self.headers['Host']
             baseuri = urlparse.urlunparse(uparts)
         return baseuri
+
+    def log_message(self, *args):
+        AuthServer.BufferedAuthRequestHandler.log_message(self, 
+            *tuple(('- %s - ' + args[0],) + (self.headers.get('User-Agent', '?'),) + args[1:])
+        )

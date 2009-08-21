@@ -7,7 +7,6 @@ How to install python WebDAV server
       Windows seems to work
       
     + Python >=2.4.x
-    + PyXML
 
 2. Run setup.py
 

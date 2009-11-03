@@ -1,9 +1,30 @@
+#Copyright (c) 2005 Simon Pamies (s.pamies@banality.de)
+#Copyright (c) 2003 Clark Evans
+#Copyright (c) 2002 Noah Spurrier
+#Copyright (c) 2001 Juergen Hermann
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
+
+
 '''
     This module is used to fork the current process into a daemon.
-    Almost none of this is necessary (or advisable) if your daemon 
-    is being started by inetd. In that case, stdin, stdout and stderr are 
-    all set up for you to refer to the network connection, and the fork()s 
-    and session manipulation should not be done (to avoid confusing inetd). 
+    Almost none of this is necessary (or advisable) if your daemon
+    is being started by inetd. In that case, stdin, stdout and stderr are
+    all set up for you to refer to the network connection, and the fork()s
+    and session manipulation should not be done (to avoid confusing inetd).
     Only the chdir() and umask() steps remain as useful.
     References:
         UNIX Programming FAQ
@@ -36,26 +57,26 @@ def deamonize(stdout='/dev/null', stderr=None, stdin='/dev/null',
         may not appear in the order that you expect.
     '''
     # Do first fork.
-    try: 
-        pid = os.fork() 
+    try:
+        pid = os.fork()
         if pid > 0: sys.exit(0) # Exit first parent.
-    except OSError, e: 
+    except OSError, e:
         sys.stderr.write("fork #1 failed: (%d) %s\n" % (e.errno, e.strerror))
         sys.exit(1)
-        
+
     # Decouple from parent environment.
-    os.chdir("/") 
-    os.umask(0) 
-    os.setsid() 
-    
+    os.chdir("/")
+    os.umask(0)
+    os.setsid()
+
     # Do second fork.
-    try: 
-        pid = os.fork() 
+    try:
+        pid = os.fork()
         if pid > 0: sys.exit(0) # Exit second parent.
-    except OSError, e: 
+    except OSError, e:
         sys.stderr.write("fork #2 failed: (%d) %s\n" % (e.errno, e.strerror))
         sys.exit(1)
-    
+
     # Open file descriptors and print start message
     if not stderr: stderr = stdout
     si = file(stdin, 'r')
@@ -69,7 +90,7 @@ def deamonize(stdout='/dev/null', stderr=None, stdin='/dev/null',
     if sys.stdin.closed: sys.stdin = open('/dev/null', 'r')
     if sys.stdout.closed: sys.stdout = open('/dev/null', 'a+')
     if sys.stderr.closed: sys.stderr = open('/dev/null', 'a+')
-    
+
     # Redirect standard file descriptors.
     os.dup2(si.fileno(), sys.stdin.fileno())
     os.dup2(so.fileno(), sys.stdout.fileno())
@@ -84,7 +105,7 @@ def startstop(stdout='/dev/null', stderr=None, stdin='/dev/null',
             pf.close()
         except IOError:
             pid = None
-         
+
         if 'stop' == action or 'restart' == action:
             if not pid:
                 mess = "Could not stop, pid file '%s' missing.\n"
@@ -109,7 +130,7 @@ def startstop(stdout='/dev/null', stderr=None, stdin='/dev/null',
                   else:
                       print str(err)
                       sys.exit(1)
-        
+
         if 'start' == action:
             if pid:
                 mess = "Start aborted since pid file '%s' exists.\n"

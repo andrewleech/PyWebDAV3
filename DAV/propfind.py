@@ -1,3 +1,19 @@
+#Copyright (c) 1999 Christian Scholz (ruebe@aachen.heimat.de)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
 
 import xml.dom.minidom
 domimpl = xml.dom.minidom.getDOMImplementation()
@@ -26,8 +42,8 @@ class PROPFIND:
 
     The list of properties will contain tuples of the form
     (element name, ns_prefix, ns_uri)
-    
-    
+
+
     """
 
     def __init__(self,uri,dataclass,depth, body):
@@ -69,10 +85,10 @@ class PROPFIND:
         df = None
         if self.request_type==RT_ALLPROP:
             df = self.create_allprop()
-        
+
         if self.request_type==RT_PROPNAME:
             df = self.create_propname()
-        
+
         if self.request_type==RT_PROP:
             df = self.create_prop()
 
@@ -82,10 +98,10 @@ class PROPFIND:
         # no body means ALLPROP!
         df = self.create_allprop()
         return df
-    
+
     def create_propname(self):
         """ create a multistatus response for the prop names """
-        
+
         dc=self._dataclass
         # create the document generator
         doc = domimpl.createDocument(None, "multistatus", None)
@@ -102,7 +118,7 @@ class PROPFIND:
             pnames=dc.get_propnames(self._uri)
             re=self.mk_propname_response(self._uri,pnames, doc)
             ms.appendChild(re)
-        
+
             for newuri in dc.get_childs(self._uri):
                 pnames=dc.get_propnames(newuri)
                 re=self.mk_propname_response(newuri,pnames, doc)
@@ -127,7 +143,7 @@ class PROPFIND:
         for ns,plist in self._dataclass.get_propnames(self._uri).items():
             self.proplist[ns]=plist
             self.namespaces.append(ns)
-        
+
         return self.create_prop()
 
     def create_prop(self):
@@ -140,7 +156,7 @@ class PROPFIND:
         2. read the property values for each URI 
            (which is dependant on the Depth header)
            This is done by the get_propvalues() method.
-        
+
         3. For each URI call the append_result() method
            to append the actual <result>-Tag to the result
            document.
@@ -163,12 +179,12 @@ class PROPFIND:
             gp,bp=self.get_propvalues(self._uri)
             res=self.mk_prop_response(self._uri,gp,bp,doc)
             ms.appendChild(res)
-        
+
         elif self._depth=="1":
             gp,bp=self.get_propvalues(self._uri)
             res=self.mk_prop_response(self._uri,gp,bp,doc)
             ms.appendChild(res)
-        
+
             for newuri in self._dataclass.get_childs(self._uri):
                 gp,bp=self.get_propvalues(newuri)
                 res=self.mk_prop_response(newuri,gp,bp,doc)
@@ -191,7 +207,7 @@ class PROPFIND:
 
         This will simply format the propnames list.
         propnames should have the format {NS1 : [prop1, prop2, ...], NS2: ...}
-        
+
         """
         re=doc.createElement("D:response")
 
@@ -202,7 +218,7 @@ class PROPFIND:
         huri=doc.createTextNode(uparts[0]+'://'+'/'.join(uparts[1:2]) + urllib.quote(fileloc))
         href.appendChild(huri)
         re.appendChild(href)
-        
+
         ps=doc.createElement("D:propstat")
         nsnum=0
 
@@ -217,7 +233,7 @@ class PROPFIND:
         for p in plist:
             pe=doc.createElement(nsp+":"+p)
             pr.appendChild(pe)
-        
+
         ps.appendChild(pr)
         re.appendChild(ps)
 
@@ -229,7 +245,7 @@ class PROPFIND:
         We differ between the good props and the bad ones for
         each generating an extra <propstat>-Node (for each error
         one, that means).
-        
+
         """
         re=doc.createElement("D:response")
         # append namespaces to response
@@ -237,7 +253,7 @@ class PROPFIND:
         for nsname in self.namespaces:
             re.setAttribute("xmlns:ns"+str(nsnum),nsname)
             nsnum=nsnum+1
-        
+
         # write href information
         uparts=urlparse.urlparse(uri)
         fileloc=uparts[2]
@@ -269,7 +285,7 @@ class PROPFIND:
                         pe.appendChild(ve)
 
                 gp.appendChild(pe)
-        
+
         ps.appendChild(gp)
         s=doc.createElement("D:status")
         t=doc.createTextNode("HTTP/1.1 200 OK")
@@ -289,11 +305,11 @@ class PROPFIND:
 
                 for ns in bad_props[ecode].keys():
                     ns_prefix="ns"+str(self.namespaces.index(ns))+":"
-                
+
                 for p in bad_props[ecode][ns]:
                     pe=doc.createElement(ns_prefix+str(p))
                     bp.appendChild(pe)
-                
+
                 s=doc.createElement("D:status")
                 t=doc.createTextNode(utils.gen_estring(ecode))
                 s.appendChild(t)
@@ -310,7 +326,7 @@ class PROPFIND:
         which we found a value and the ones for which we
         only got an error, either because they haven't been
         found or the user is not allowed to read them.
-        
+
         """
         good_props={}
         bad_props={}
@@ -326,10 +342,10 @@ class PROPFIND:
                     good_props[ns][prop]=r
                 except DAV_Error, error_code:
                     ec=error_code[0]
-                
+
                 # ignore props with error_code if 0 (invisible)
                 if ec==0: continue
-                
+
                 if bad_props.has_key(ec):
                     if bad_props[ec].has_key(ns):
                         bad_props[ec][ns].append(prop)

@@ -1,22 +1,23 @@
 #!/usr/bin/env python
+#Copyright (c) 1999-2005 Christian Scholz (cs@comlounge.net)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
 
 """
 Python WebDAV Server.
-Copyright (C) 1999-2005 Christian Scholz (cs@comlounge.net)
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 This is an example implementation of a DAVserver using the DAV package.
 
@@ -65,11 +66,11 @@ def runserver(
     directory = directory.strip()
     directory = directory.rstrip('/')
     host = host.strip()
-   
+
     if not os.path.isdir(directory):
         log.error('%s is not a valid directory!' % directory)
         return sys.exit(233)
-    
+
     # basic checks against wrong hosts
     if host.find('/') != -1 or host.find(':') != -1:
         log.error('Malformed host %s' % host)
@@ -79,7 +80,7 @@ def runserver(
     if directory == '/':
         log.error('Root directory not allowed!')
         sys.exit(233)
-        
+
     # dispatch directory and host to the filesystem handler
     # This handler is responsible from where to take the data
     handler.IFACE_CLASS = FilesystemHandler(directory, 'http://%s:%s/' % (host, port), verbose )
@@ -99,7 +100,7 @@ def runserver(
     if handler._config.DAV.getboolean('mimecheck') is False:
         handler.IFACE_CLASS.mimecheck = False
         log.info('Disabled mimetype sniffing (All files will have type application/octet-stream)')
-   
+
     # initialize server on specified port
     runner = server( (host, port), handler )
     print('Listening on %s (%i)' % (host, port))
@@ -150,12 +151,12 @@ Parameters:
                         stop    - Stop daemon
                         restart - Restart complete server
                         status  - Returns status of server
-                        
+
     -v, --verbose   Be verbose
     -l, --loglevel  Select the log level : DEBUG, INFO, WARNING, ERROR, CRITICAL
                     Default is WARNING
     -h, --help      Show this screen
-    
+
 Please send bug reports and feature requests to %s
 """ % (__version__, __author__)
 
@@ -189,7 +190,7 @@ def run():
     configfile = ''
     mimecheck = True
     loglevel = 'warning'
-    
+
     # parse commandline
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:Ml:',
@@ -200,7 +201,7 @@ def run():
         print usage
         print '>>>> ERROR: %s' % str(e)
         sys.exit(2)
-    
+
     for o,a in opts:
         if o in ['-i', '--icounter']:
             counter = int(str(a).strip())
@@ -235,7 +236,7 @@ def run():
         if o in ['-h', '--help']:
             print usage
             sys.exit(2)
-    
+
         if o in ['-n', '--noauth']:
             noauth = True
 
@@ -307,13 +308,13 @@ def run():
             print >>sys.stderr, '>> ERROR: No usable parameter specified!'
             print >>sys.stderr, '>> Example: davserver -D /home/files -n'
             sys.exit(3)
-  
+
     if daemonaction == 'status':
         log.info('Checking for state...')
-   
+
     if type(port) == type(''):
         port = int(port.strip())
-   
+
     if daemonize:
 
         # check if pid file exists
@@ -327,7 +328,7 @@ def run():
                     pidfile='/tmp/pydav%s.pid' % counter, 
                     startmsg='>> Started PyWebDAV (PID: %s)',
                     action=daemonaction)
-  
+
     # start now
     handler = DAVAuthHandler
     if mysql == True:

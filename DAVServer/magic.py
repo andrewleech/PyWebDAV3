@@ -1,16 +1,30 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
+#Copyright (c) 2000 Jason Petrone (jp_py@jsnp.net)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
+
 '''
 magic.py
  determines a file type by its magic number
-
- (C)opyright 2000 Jason Petrone <jp_py@jsnp.net>
- All Rights Reserved
 
  Command Line Usage: running as `python magic.py file` will print
                      a description of what 'file' is.
 
  Module Usage:
-     magic.whatis(data): when passed a string 'data' containing 
+     magic.whatis(data): when passed a string 'data' containing
                          binary or text data, a description of
                          what the data is will be returned.
 
@@ -905,7 +919,7 @@ def strToNum(n):
   else:
     val = string.atol(n)
   return val
-       
+
 def unescape(s):
   # replace string escape sequences
   while 1:
@@ -941,7 +955,7 @@ def unescape(s):
 class magicTest:
   def __init__(self, offset, t, op, value, msg, mask = None):
     if t.count('&') > 0:
-      mask = strToNum(t[t.index('&')+1:])  
+      mask = strToNum(t[t.index('&')+1:])
       t = t[:t.index('&')]
     if type(offset) == type('a'):
       self.offset = strToNum(offset)
@@ -953,12 +967,12 @@ class magicTest:
     self.op = op
     self.mask = mask
     self.value = value
-      
+
 
   def test(self, data):
     if self.mask:
       data = data & self.mask
-    if self.op == '=': 
+    if self.op == '=':
       if self.value == data: return self.msg
     elif self.op ==  '<':
       pass
@@ -996,10 +1010,10 @@ class magicTest:
         pass
     except:
       return None
-  
+
 #    print str([self.msg, self.value, data])
     return self.test(data)
-    
+
 
 def load(file):
   global magicNumbers
@@ -1084,8 +1098,8 @@ def whatis(data):
   if string.find('def', data, 0, 8192) > -1:
     return 'Python Source'
   return 'ASCII text'
-      
-    
+
+
 def file(file):
   try:
     return whatis(open(file, 'r').read(8192))
@@ -1094,7 +1108,7 @@ def file(file):
       return 'directory'
     else:
       raise e
-  
+
 
 #### BUILD DATA ####
 #load('mime-magic')

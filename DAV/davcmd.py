@@ -1,3 +1,22 @@
+#Copyright (c) 1999 Christian Scholz (ruebe@aachen.heimat.de)
+#Copyright (c) 2009 Simon Pamies (s.pamies@banality.de)
+#Copyright (c) 2009 Cedric Krier (cedric.krier@b2ck.com)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
+
 """
 
 davcmd.py
@@ -15,7 +34,7 @@ from utils import create_treelist, is_prefix
 from errors import *
 
 def deltree(dc,uri,exclude={}):
-    """ delete a tree of resources 
+    """ delete a tree of resources
 
     dc  -- dataclass to use
     uri -- root uri to delete
@@ -36,7 +55,7 @@ def deltree(dc,uri,exclude={}):
     for i in range(len(tlist),0,-1):
         problem_uris=result.keys()
         element=tlist[i-1]
-    
+
         # test here, if an element is a prefix of an uri which
         # generated an error before.
         # note that we walk here from childs to parents, thus
@@ -47,23 +66,23 @@ def deltree(dc,uri,exclude={}):
             if is_prefix(element,p):
                 ok=None
                 break
-    
-            if not ok: continue 
-    
+
+            if not ok: continue
+
         # here we test for the exclude list which is the other way round!
         for p in exclude.keys():
             if is_prefix(p,element):
                 ok=None
                 break
-        
-            if not ok: continue 
-    
+
+            if not ok: continue
+
         # now delete stuff
         try:
             delone(dc,element)
-        except DAV_Error, (ec,dd):  
+        except DAV_Error, (ec,dd):
             result[element]=ec
-    
+
     return result
 
 def delone(dc,uri):
@@ -80,11 +99,11 @@ def delone(dc,uri):
 # helper function
 
 def copy(dc,src,dst):
-    """ only copy the element 
+    """ only copy the element
 
     This is just a helper method factored out from copy and
     copytree. It will not handle the overwrite or depth header.
-    
+
     """
 
     # destination should have been deleted before
@@ -111,7 +130,7 @@ def copyone(dc,src,dst,overwrite=None):
 
     # if we cannot delete everything, then do not copy!
     if delres: return delres
-    
+
     try:
         copy(dc,src,dst)    # pass thru exceptions
     except DAV_Error, (ec,dd):
@@ -122,7 +141,7 @@ def copytree(dc,src,dst,overwrite=None):
 
     dc  -- dataclass to use
     src -- src uri from where to copy
-    dst -- dst uri 
+    dst -- dst uri
     overwrite -- if 1 then delete dst uri before
 
     returns dict of uri:error_code tuples from which
@@ -159,8 +178,8 @@ def copytree(dc,src,dst,overwrite=None):
             if is_prefix(p,element):
                 ok=None
                 break
-    
-        if not ok: continue 
+
+        if not ok: continue
 
         # now create the destination URI which corresponds to
         # the actual source URI. -> actual_dst
@@ -172,12 +191,12 @@ def copytree(dc,src,dst,overwrite=None):
         # now copy stuff
         try:
             copy(dc,element,actual_dst)
-        except DAV_Error, (ec,dd):  
+        except DAV_Error, (ec,dd):
             result[element]=ec
 
     return result
-        
-        
+
+
 
 ###
 ### MOVE
@@ -196,7 +215,7 @@ def moveone(dc,src,dst,overwrite=None):
 
     # then delete it
     dc.rm(src)
-      
+
 def movetree(dc,src,dst,overwrite=None):
     """ move a collection
 
@@ -214,4 +233,3 @@ def movetree(dc,src,dst,overwrite=None):
     res=deltree(dc,src,exclude=res)
 
     return res
-      

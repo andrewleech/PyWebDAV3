@@ -1,3 +1,20 @@
+#Copyright (c) 1999 Christian Scholz (ruebe@aachen.heimat.de)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
+
 """
 
 basic interface class
@@ -20,16 +37,16 @@ class dav_interface:
     ### defined properties (modify this but let the DAV stuff there!)
     ### the format is namespace: [list of properties]
 
-    PROPS={"DAV:" : ('creationdate', 
-                     'displayname', 
-                     'getcontentlanguage', 
-                     'getcontentlength', 
-                     'getcontenttype', 
-                     'getetag', 
-                     'getlastmodified', 
-                     'lockdiscovery', 
-                     'resourcetype', 
-                     'source', 
+    PROPS={"DAV:" : ('creationdate',
+                     'displayname',
+                     'getcontentlanguage',
+                     'getcontentlength',
+                     'getcontenttype',
+                     'getetag',
+                     'getlastmodified',
+                     'lockdiscovery',
+                     'resourcetype',
+                     'source',
                      'supportedlock'),
            "NS2" : ("p1","p2")
            }
@@ -42,20 +59,20 @@ class dav_interface:
           "NS2"  : "ns2" }
 
     def get_propnames(self,uri):
-        """ return the property names allowed for the given URI 
+        """ return the property names allowed for the given URI
 
         In this method we simply return the above defined properties
-        assuming that they are valid for any resource. 
+        assuming that they are valid for any resource.
         You can override this in order to return a different set
         of property names for each resource.
-        
+
         """
         return self.PROPS
 
     def get_prop2(self,uri,ns,pname):
-        """ return the value of a property 
+        """ return the value of a property
 
-        
+
         """
         if lower(ns)=="dav:": return self.get_dav(uri,pname)
 
@@ -85,15 +102,15 @@ class dav_interface:
     ###
 
     def get_data(self,uri):
-        """ return the content of an object 
+        """ return the content of an object
 
         return data or raise an exception
-        
+
         """
         raise DAV_NotFound
 
     def put(self,uri,data):
-        """ write an object to the repository 
+        """ write an object to the repository
 
         return the location uri or raise an exception
         """
@@ -153,7 +170,7 @@ class dav_interface:
         """ return the last modification date of the resource """
         return time.time()
 
-    
+
     ###
     ### COPY MOVE DELETE
     ###
@@ -167,7 +184,7 @@ class dav_interface:
         before by the DELETE class in DAV/delete.py
 
         return a success code or raise an exception
-        
+
         """
         raise DAV_NotFound
 
@@ -175,7 +192,7 @@ class dav_interface:
         """ delete a single resource 
 
         return a success code or raise an exception
-        
+
         """
         raise DAV_NotFound
 

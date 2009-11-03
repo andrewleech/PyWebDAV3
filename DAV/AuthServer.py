@@ -1,9 +1,24 @@
-#!/usr/bin/env python
+#Copyright (c) 2009 Simon Pamies (s.pamies@banality.de)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
 
 """
     Authenticating HTTP Server
 
-    This module builds on BaseHTTPServer and implements 
+    This module builds on BaseHTTPServer and implements
     basic authentication
 
 """
@@ -51,7 +66,7 @@ class AuthRequestHandler:
     ok or not. None means that the user is not authorized.
     """
 
-    # False means no authentiation 
+    # False means no authentiation
     DO_AUTH=1
 
     AUTH_ERROR_MSG="""<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
@@ -76,7 +91,7 @@ class AuthRequestHandler:
         """
         Special handle method with buffering and authentication
         """
-        
+
         self.raw_requestline = self.rfile.readline()
         self.request_version = version = "HTTP/0.9" # Default
         requestline = self.raw_requestline
@@ -105,7 +120,7 @@ class AuthRequestHandler:
         else:
             self.send_error(400, "Bad request syntax (%s)" % `requestline`)
             return
-        
+
         self.command, self.path, self.request_version = command, path, version
         self.headers = self.MessageClass(self.rfile, 0)
 
@@ -195,7 +210,7 @@ class AuthRequestHandler:
         self.send_header("WWW-Authenticate","Basic realm=\"PyWebDAV\"")
         self.send_header("Content-Type", 'text/html')
         self.end_headers()
-        
+
         lines=split(emsg,"\n")
         for l in lines:
             self._append("%s\r\n" %l)
@@ -204,7 +219,7 @@ class AuthRequestHandler:
         """Checks if the given user and the given
         password are allowed to access.
         """
-        
+
         # Always reject
         return None
 

@@ -1,25 +1,27 @@
+#Copyright (c) 1999 Christian Scholz (ruebe@aachen.heimat.de)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
+
 """
     Python WebDAV Server.
-    Copyright (C) 1999 Christian Scholz (ruebe@aachen.heimat.de)
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
+    This module builds on AuthServer by implementing the standard DAV
+    methods.
 
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-This module builds on AuthServer by implementing the standard DAV
-methods.
-
-Subclass this class and specify an IFACE_CLASS. See example.
+    Subclass this class and specify an IFACE_CLASS. See example.
 
 """
 
@@ -61,8 +63,8 @@ import StringIO
 log = logging.getLogger(__name__)
 
 class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
-    """Simple DAV request handler with 
-    
+    """Simple DAV request handler with
+
     - GET
     - HEAD
     - PUT
@@ -78,7 +80,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
     It uses the resource/collection classes for serving and
     storing content.
-    
+
     """
 
     server_version = "DAV/" + __version__
@@ -91,10 +93,10 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_header("Connection", "close")
         self.send_header("Accept-Ranges", "bytes")
         self.send_header('Date', rfc1123_date())
-        
+
         for a,v in headers.items():
             self.send_header(a,v)
-        
+
         if DATA:
             if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
                     and len(DATA) > self.encode_threshold:
@@ -110,7 +112,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             self.send_header('Content-Type', ctype)
         else:
             self.send_header('Content-Length', 0)
-        
+
         self.end_headers()
         if DATA:
             self._append(DATA)
@@ -123,7 +125,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
     def send_body_chunks(self, DATA, code, msg, desc, ctype='text/xml; encoding="utf-8"'):
         """ send a body in chunks """
-        
+
         self.responses[207]=(msg,desc)
         self.send_response(code,message=msg)
         self.send_header("Content-type", ctype)
@@ -379,7 +381,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 pass
 
             log.debug("do_PUT: etag = %s" % etag)
-            
+
             for match in self.headers['If-Match'].split(','):
                 if match == '*':
                     if dc.exists(uri):
@@ -396,7 +398,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         # Handle If-None-Match
         if self.headers.has_key('If-None-Match'):
             log.debug("do_PUT: If-None-Match %s" % self.headers['If-None-Match'])
-            
+
             test = True
             etag = None
             try:
@@ -426,7 +428,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             (not ifheader)
         ):
             return self.send_body(None, '423', 'Locked', 'Locked')
-        
+
         if ((self._l_isLocked(uri)) and (ifheader)):
             uri_token = self._l_getLockForUri(uri)
             taglist = IfParser(ifheader)
@@ -435,7 +437,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 for listitem in tag.list:
                     token = tokenFinder(listitem)
                     if (
-                        token and 
+                        token and
                         (self._l_hasLock(token)) and
                         (self._l_getLock(token) == uri_token)
                     ):
@@ -546,12 +548,12 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         d="infinity"
         if self.headers.has_key("Depth"):
             d=self.headers['Depth']
-            
-            if d!="0" and d!="infinity": 
+
+            if d!="0" and d!="infinity":
                 self.send_status(400)
                 return
-            
-            if d=="0":  
+
+            if d=="0":
                 res=cp.single_action()
                 self.send_status(res)
                 return

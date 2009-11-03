@@ -1,3 +1,20 @@
+#Copyright (c) 1999 Christian Scholz (ruebe@aachen.heimat.de)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
+
 import sys
 import urlparse
 import os
@@ -49,7 +66,7 @@ class FilesystemHandler(dav_interface):
 
         if not os.path.isdir(path):
             raise Exception, '%s not must be a directory!' % path
-        
+
         self.directory = path
 
     def setBaseURI(self, uri):
@@ -78,7 +95,7 @@ class FilesystemHandler(dav_interface):
 
     def get_childs(self,uri):
         """ return the child objects as self.baseuris for the given URI """
-        
+
         fileloc=self.uri2local(uri)
         filelist=[]
 
@@ -88,11 +105,11 @@ class FilesystemHandler(dav_interface):
                     files=os.listdir(fileloc)
                 except:
                     raise DAV_NotFound
-                
+
                 for file in files:
                     newloc=os.path.join(fileloc,file)
                     filelist.append(self.local2uri(newloc))
-     
+
                 log.info('get_childs: Childs %s' % filelist)
 
         return filelist
@@ -115,7 +132,7 @@ class FilesystemHandler(dav_interface):
                 # also raise an error for collections
                 # don't know what should happen then..
                 log.info('get_data: %s not found' % path)
-        
+
         raise DAV_NotFound
 
     def _get_dav_resourcetype(self,uri):
@@ -128,7 +145,7 @@ class FilesystemHandler(dav_interface):
             return COLLECTION
 
         raise DAV_NotFound
-        
+
     def _get_dav_displayname(self,uri):
         raise DAV_Secret    # do not show
 
@@ -139,7 +156,7 @@ class FilesystemHandler(dav_interface):
             if os.path.isfile(path):
                 s=os.stat(path)
                 return str(s[6])
-        
+
         return '0'
 
     def get_lastmodified(self,uri):
@@ -265,12 +282,12 @@ class FilesystemHandler(dav_interface):
     ###
 
     def delone(self,uri):
-        """ delete a single resource 
+        """ delete a single resource
 
         You have to return a result dict of the form
         uri:error_code
         or None if everything's ok
-        
+
         """
         return delone(self,uri)
 
@@ -290,7 +307,7 @@ class FilesystemHandler(dav_interface):
     ###
 
     def moveone(self,src,dst,overwrite):
-        """ move one resource with Depth=0 
+        """ move one resource with Depth=0
 
         an alternative implementation would be
 
@@ -302,7 +319,7 @@ class FilesystemHandler(dav_interface):
         r=os.system("mv '%s' '%s'" %(src,dst))
         if r: return 412
         return result_code
-       
+
         (untested!). This would not use the davcmd functions
         and thus can only detect errors directly on the root node.
         """
@@ -314,14 +331,14 @@ class FilesystemHandler(dav_interface):
         an alternative implementation would be
 
         result_code=201
-        if overwrite: 
+        if overwrite:
             result_code=204
             r=os.system("rm -rf '%s'" %dst)
             if r: return 412
         r=os.system("mv '%s' '%s'" %(src,dst))
         if r: return 412
         return result_code
-       
+
         (untested!). This would not use the davcmd functions
         and thus can only detect errors directly on the root node"""
 
@@ -332,7 +349,7 @@ class FilesystemHandler(dav_interface):
     ###
 
     def copyone(self,src,dst,overwrite):
-        """ copy one resource with Depth=0 
+        """ copy one resource with Depth=0
 
         an alternative implementation would be
 
@@ -344,7 +361,7 @@ class FilesystemHandler(dav_interface):
         r=os.system("cp '%s' '%s'" %(src,dst))
         if r: return 412
         return result_code
-       
+
         (untested!). This would not use the davcmd functions
         and thus can only detect errors directly on the root node.
         """
@@ -356,14 +373,14 @@ class FilesystemHandler(dav_interface):
         an alternative implementation would be
 
         result_code=201
-        if overwrite: 
+        if overwrite:
             result_code=204
             r=os.system("rm -rf '%s'" %dst)
             if r: return 412
         r=os.system("cp -r '%s' '%s'" %(src,dst))
         if r: return 412
         return result_code
-       
+
         (untested!). This would not use the davcmd functions
         and thus can only detect errors directly on the root node"""
 

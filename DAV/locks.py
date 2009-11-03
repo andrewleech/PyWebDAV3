@@ -1,3 +1,20 @@
+#Copyright (c) 2009 Simon Pamies (s.pamies@banality.de)
+#
+#This library is free software; you can redistribute it and/or
+#modify it under the terms of the GNU Library General Public
+#License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This library is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#Library General Public License for more details.
+#
+#You should have received a copy of the GNU Library General Public
+#License along with this library; if not, write to the Free
+#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+#MA 02111-1307, USA
+
 import os
 import sys
 import time
@@ -97,7 +114,7 @@ class LockManager:
         token = tokenFinder(self.headers.get('Lock-Token'))
         if self._l_isLocked(uri):
             self._l_delLock(token)
-        
+
         self.send_body(None, '204', 'Ok', 'Ok')
 
     def do_LOCK(self):
@@ -126,19 +143,19 @@ class LockManager:
             # Full LOCK request but resource already locked
             self.responses[423] = ('Locked', 'Already locked')
             return self.send_status(423)
-        
+
         elif body and not ifheader:
             # LOCK with XML information
             data = self._lock_unlock_parse(body)
             token, result = self._lock_unlock_create(uri, 'unknown', depth, data)
 
             if result:
-                self.send_body(result, '207', 'Error', 'Error', 
+                self.send_body(result, '207', 'Error', 'Error',
                                 'text/xml; charset="utf-8"')
 
             else:
                 lock = self._l_getLock(token)
-                self.send_body(lock.asXML(), '200', 'OK', 'OK', 
+                self.send_body(lock.asXML(), '200', 'OK', 'OK',
                                 'text/xml; charset="utf-8"',
                                 {'Lock-Token' : '<opaquelocktoken:%s>' % token})
 
@@ -171,7 +188,7 @@ class LockItem:
     """ Lock with support for exclusive write locks. Some code taken from
     webdav.LockItem from the Zope project. """
 
-    def __init__(self, uri, creator, lockowner, depth=0, timeout='Infinite', 
+    def __init__(self, uri, creator, lockowner, depth=0, timeout='Infinite',
                     locktype='write', lockscope='exclusive', token=None, **kw):
 
         self.uri = uri

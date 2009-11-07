@@ -357,11 +357,14 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         dl = DELETE(uri,dc)
         if dc.is_collection(uri):
             res=dl.delcol()
-        else: res=dl.delone()
+            if res:
+                self.send_status(207,body=res)
+            else:
+                self.send_status(204)
+        else:
+            res=dl.delone() or 204
+            self.send_status(res)
 
-        if res:
-            self.send_status(207,body=res)
-        else: self.send_status(204)
 
     def do_PUT(self):
         dc=self.IFACE_CLASS
@@ -587,10 +590,10 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     def send_status(self,code=200,mediatype='text/xml;  charset="utf-8"', \
                                 msg=None,body=None):
 
-        if not msg: 
-            msg=self.responses[code][1]
+        if not msg:
+            msg=self.responses.get(code, ['', ''])[1]
 
-        self.send_body(body,code,self.responses[code][0],msg,mediatype)
+        self.send_body(body,code,self.responses.get(code, [''])[0],msg,mediatype)
 
     def get_baseuri(self, dc):
         baseuri = dc.baseuri

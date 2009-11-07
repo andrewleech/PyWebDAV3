@@ -45,12 +45,5 @@ class DELETE:
         """ delete a resource """
 
         dc=self.__dataclass
-        result=dc.delone(self.__uri)
-
-        if not result: return None
-        if not len(result.items()):
-            return None # everything ok
-
-        # create the result element
-        return make_xmlresponse(result)
+        return dc.delone(self.__uri)
 

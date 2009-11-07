@@ -88,9 +88,9 @@ def deltree(dc,uri,exclude={}):
 def delone(dc,uri):
     """ delete a single object """
     if dc.is_collection(uri):
-        dc.rmcol(uri)   # should be empty
+        return dc.rmcol(uri)   # should be empty
     else:
-        dc.rm(uri)
+        return dc.rm(uri)
 
 ###
 ### COPY

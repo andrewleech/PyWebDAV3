@@ -132,8 +132,9 @@ def get_parenturi(uri):
 
 def make_xmlresponse(result):
     """ construct a response from a dict of uri:error_code elements """
-    doc = minidom.getDOMImplementation().createDocument(None, "D:multistatus", None)
+    doc = minidom.getDOMImplementation().createDocument(None, "multistatus", None)
     doc.documentElement.setAttribute("xmlns:D","DAV:")
+    doc.documentElement.tagName = "D:multistatus"
 
     for el,ec in result.items():
         re=doc.createElementNS("DAV:","response")

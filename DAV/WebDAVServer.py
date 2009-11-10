@@ -93,6 +93,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_header("Connection", "close")
         self.send_header("Accept-Ranges", "bytes")
         self.send_header('Date', rfc1123_date())
+        self.send_header('DAV', DAV_VERSION_2['version'])
 
         for a,v in headers.items():
             self.send_header(a,v)
@@ -132,6 +133,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_header("Connection", "close")
         self.send_header("Transfer-Encoding", "chunked")
         self.send_header('Date', rfc1123_date())
+        self.send_header('DAV', DAV_VERSION_2['version'])
 
         if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
                 and len(DATA) > self.encode_threshold:

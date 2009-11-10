@@ -344,7 +344,6 @@ class PROPFIND:
         ddc = self._dataclass
         for (ns,plist) in self.proplist.items():
             good_props[ns]={}
-            bad_props={}
             for prop in plist:
                 ec = 0
                 try:

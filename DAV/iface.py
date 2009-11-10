@@ -91,11 +91,11 @@ class dav_interface:
             raise DAV_NotFound
         mname=prefix+"_"+propname.replace('-', '_')
         try:
-                m=getattr(self,mname)
-                r=m(uri)
-                return r
+            m=getattr(self,mname)
+            r=m(uri)
+            return r
         except AttributeError:
-                raise DAV_NotFound
+            raise DAV_NotFound
 
     ###
     ### DATA methods (for GET and PUT)

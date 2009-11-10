@@ -251,7 +251,8 @@ class PROPFIND:
         # append namespaces to response
         nsnum=0
         for nsname in self.namespaces:
-            re.setAttribute("xmlns:ns"+str(nsnum),nsname)
+            if nsname != 'DAV:':
+                re.setAttribute("xmlns:ns"+str(nsnum),nsname)
             nsnum=nsnum+1
 
         # write href information
@@ -269,12 +270,18 @@ class PROPFIND:
 
         gp=doc.createElement("D:prop")
         for ns in good_props.keys():
-            ns_prefix="ns"+str(self.namespaces.index(ns))+":"
+            if ns != 'DAV:':
+                ns_prefix="ns"+str(self.namespaces.index(ns))+":"
+            else:
+                ns_prefix = 'D:'
             for p,v in good_props[ns].items():
 
                 pe=doc.createElement(ns_prefix+str(p))
                 if hasattr(v, '__class__') and v.__class__.__name__ == 'Element':
                     pe.appendChild(v)
+                elif isinstance(v, list):
+                    for val in v:
+                        pe.appendChild(val)
                 else:
                     if p=="resourcetype":
                         if v==1:
@@ -304,11 +311,14 @@ class PROPFIND:
                 ps.appendChild(bp)
 
                 for ns in bad_props[ecode].keys():
-                    ns_prefix="ns"+str(self.namespaces.index(ns))+":"
+                    if ns != 'DAV:':
+                        ns_prefix="ns"+str(self.namespaces.index(ns))+":"
+                    else:
+                        ns_prefix = 'D:'
 
-                for p in bad_props[ecode][ns]:
-                    pe=doc.createElement(ns_prefix+str(p))
-                    bp.appendChild(pe)
+                    for p in bad_props[ecode][ns]:
+                        pe=doc.createElement(ns_prefix+str(p))
+                        bp.appendChild(pe)
 
                 s=doc.createElement("D:status")
                 t=doc.createTextNode(utils.gen_estring(ecode))

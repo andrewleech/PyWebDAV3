@@ -281,7 +281,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.unquote(uri)
 
-        rp = REPORT(uri, dc, self.headers.get('Depth', 'infinity'), body)
+        rp = REPORT(uri, dc, self.headers.get('Depth', '0'), body)
 
         try:
             DATA = '%s\n' % rp.createResponse()

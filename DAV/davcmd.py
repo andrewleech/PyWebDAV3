@@ -107,16 +107,17 @@ def copy(dc,src,dst):
     """
 
     # destination should have been deleted before
-    if dc.exists(dst): raise DAV_Error, 412
+    if dc.exists(dst): 
+        raise DAV_Error, 412
 
     # source should exist also
-    if not dc.exists(src): raise DAV_NotFound
+    if not dc.exists(src): 
+        raise DAV_NotFound
 
     if dc.is_collection(src):
-        dc.copycol(src,dst) # an exception will be passed thru
+        dc.copycol(src, dst) # an exception will be passed thru
     else:
-        dc.copy(src,dst)  # an exception will be passed thru
-
+        dc.copy(src, dst)  # an exception will be passed thru
 
 # the main functions
 
@@ -124,16 +125,17 @@ def copyone(dc,src,dst,overwrite=None):
     """ copy one resource to a new destination """
 
     if overwrite and dc.exists(dst):
-        delres=deltree(dc,dst)
+        delres = deltree(dc, dst)
     else:
         delres={}
 
     # if we cannot delete everything, then do not copy!
-    if delres: return delres
+    if delres: 
+        return delres
 
     try:
-        copy(dc,src,dst)    # pass thru exceptions
-    except DAV_Error, (ec,dd):
+        copy(dc, src, dst)    # pass thru exceptions
+    except DAV_Error, (ec, dd):
         return ec
 
 def copytree(dc,src,dst,overwrite=None):
@@ -156,17 +158,18 @@ def copytree(dc,src,dst,overwrite=None):
         delres={}
 
     # if we cannot delete everything, then do not copy!
-    if delres: return delres
+    if delres: 
+        return delres
 
     # get the tree we have to copy
-    tlist=create_treelist(dc,src)
-    result={}
+    tlist = create_treelist(dc,src)
+    result = {}
 
     # prepare destination URIs (get the prefix)
-    dpath=urlparse.urlparse(dst)[2]
+    dpath = urlparse.urlparse(dst)[2]
 
     for element in tlist:
-        problem_uris=result.keys()
+        problem_uris = result.keys()
 
         # now URIs get longer and longer thus we have
         # to test if we had a parent URI which we were not
@@ -197,7 +200,6 @@ def copytree(dc,src,dst,overwrite=None):
     return result
 
 
-
 ###
 ### MOVE
 ###
@@ -211,7 +213,7 @@ def moveone(dc,src,dst,overwrite=None):
     """
 
     # first copy it
-    copyone(dc,src,dst,overwrite)
+    copyone(dc, src, dst, overwrite)
 
     # then delete it
     dc.rm(src)
@@ -227,9 +229,10 @@ def movetree(dc,src,dst,overwrite=None):
     """
 
     # first copy it
-    res=copytree(dc,src,dst,overwrite)
+    res = copytree(dc,src,dst,overwrite)
 
     # then delete it
-    res=deltree(dc,src,exclude=res)
+    res = deltree(dc,src,exclude=res)
 
     return res
+

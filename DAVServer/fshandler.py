@@ -22,6 +22,7 @@ import time
 from string import joinfields, split, lower
 import logging
 import types
+import shutil
 
 from DAV.constants import COLLECTION, OBJECT
 from DAV.errors import *
@@ -243,7 +244,7 @@ class FilesystemHandler(dav_interface):
 
         # test, if we are allowed to create it
         try:
-            os.system("mkdir '%s'" % path)
+            os.mkdir(path)
             log.info('mkcol: Created new collection %s' % path)
             return 201
         except:
@@ -259,21 +260,26 @@ class FilesystemHandler(dav_interface):
         if not os.path.exists(path):
             raise DAV_NotFound
 
-        if not os.system("rmdir '%s'" %path):
-            return 204
-        else:
+        try:
+            shutil.rmtree(path)
+        except OSError:
             raise DAV_Forbidden # forbidden
+        
+        return 204
 
     def rm(self,uri):
         """ delete a normal resource """
         path=self.uri2local(uri)
         if not os.path.exists(path):
             raise DAV_NotFound
-        if not os.system("rm -f '%s'" %path):
-            return 204
-        else:
-            log.info('rm: Forbidden')
+
+        try:
+            os.unlink(path)
+        except OSError, ex:
+            log.info('rm: Forbidden (%s)' % ex)
             raise DAV_Forbidden # forbidden
+
+        return 204
 
     ###
     ### DELETE handlers (examples)
@@ -308,39 +314,13 @@ class FilesystemHandler(dav_interface):
 
     def moveone(self,src,dst,overwrite):
         """ move one resource with Depth=0
-
-        an alternative implementation would be
-
-        result_code=201
-        if overwrite: 
-            result_code=204
-            r=os.system("rm -f '%s'" %dst)
-            if r: return 412
-        r=os.system("mv '%s' '%s'" %(src,dst))
-        if r: return 412
-        return result_code
-
-        (untested!). This would not use the davcmd functions
-        and thus can only detect errors directly on the root node.
         """
+
         return moveone(self,src,dst,overwrite)
 
     def movetree(self,src,dst,overwrite):
         """ move a collection with Depth=infinity
-
-        an alternative implementation would be
-
-        result_code=201
-        if overwrite:
-            result_code=204
-            r=os.system("rm -rf '%s'" %dst)
-            if r: return 412
-        r=os.system("mv '%s' '%s'" %(src,dst))
-        if r: return 412
-        return result_code
-
-        (untested!). This would not use the davcmd functions
-        and thus can only detect errors directly on the root node"""
+        """
 
         return movetree(self,src,dst,overwrite)
 
@@ -350,39 +330,13 @@ class FilesystemHandler(dav_interface):
 
     def copyone(self,src,dst,overwrite):
         """ copy one resource with Depth=0
-
-        an alternative implementation would be
-
-        result_code=201
-        if overwrite: 
-            result_code=204
-            r=os.system("rm -f '%s'" %dst)
-            if r: return 412
-        r=os.system("cp '%s' '%s'" %(src,dst))
-        if r: return 412
-        return result_code
-
-        (untested!). This would not use the davcmd functions
-        and thus can only detect errors directly on the root node.
         """
+
         return copyone(self,src,dst,overwrite)
 
     def copytree(self,src,dst,overwrite):
         """ copy a collection with Depth=infinity
-
-        an alternative implementation would be
-
-        result_code=201
-        if overwrite:
-            result_code=204
-            r=os.system("rm -rf '%s'" %dst)
-            if r: return 412
-        r=os.system("cp -r '%s' '%s'" %(src,dst))
-        if r: return 412
-        return result_code
-
-        (untested!). This would not use the davcmd functions
-        and thus can only detect errors directly on the root node"""
+        """
 
         return copytree(self,src,dst,overwrite)
 
@@ -396,15 +350,16 @@ class FilesystemHandler(dav_interface):
 
     def copy(self,src,dst):
         """ copy a resource from src to dst """
+
         srcfile=self.uri2local(src)
         dstfile=self.uri2local(dst)
         try:
-            os.system("cp '%s' '%s'" %(srcfile,dstfile))
-        except:
+            shutil.copy(srcfile, dstfile)
+        except OSError:
             log.info('copy: forbidden')
             raise DAV_Error, Forbidden
 
-    def copycol(self,src,dst):
+    def copycol(self, src, dst):
         """ copy a collection.
 
         As this is not recursive (the davserver recurses itself)
@@ -414,7 +369,6 @@ class FilesystemHandler(dav_interface):
         """
 
         return self.mkcol(dst)
-
 
     def exists(self,uri):
         """ test if a resource exists """

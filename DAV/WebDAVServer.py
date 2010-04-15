@@ -89,7 +89,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                     and len(DATA) > self.encode_threshold:
                 buffer = StringIO.StringIO()
                 output = gzip.GzipFile(mode='wb', fileobj=buffer)
-                if isinstance(DATA, str):
+                if isinstance(DATA, str) or isinstance(DATA, unicode):
                     output.write(DATA)
                 else:
                     for buf in DATA:
@@ -106,7 +106,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         self.end_headers()
         if DATA:
-            if isinstance(DATA, str):
+            if isinstance(DATA, str) or isinstance(DATA, unicode):
                 log.debug("Don't use iterator")
                 self._append(DATA)
             else:
@@ -135,7 +135,8 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         else:
             self.send_body_chunks(DATA, code, msg, desc, ctype, headers)
  
-    def send_body_chunks(self, DATA, code, msg, desc, ctype='text/xml; encoding="utf-8"'):
+    def send_body_chunks(self, DATA, code, msg=None, desc=None, 
+                            ctype='text/xml"', headers={}):
         """ send a body in chunks """
 
         self.responses[207]=(msg,desc)
@@ -174,7 +175,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.end_headers()
 
         if DATA:
-            if isinstance(DATA, str):
+            if isinstance(DATA, str) or isinstance(DATA, unicode):
                 self._append(hex(len(DATA))[2:]+"\r\n")
                 self._append(DATA)
                 self._append("\r\n")
@@ -223,7 +224,6 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         self.send_header('MS-Author-Via', 'DAV') # this is for M$
         self.end_headers()
-        self.log_request(status_code)
 
     def _HEAD_GET(self, with_body=False):
         """ Returns headers and body for given resource """
@@ -268,7 +268,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         if with_body is False:
             data = None
 
-        if isinstance(data, str):
+        if isinstance(data, str) or isinstance(data, unicode):
             self.send_body(data, status_code, None, None, content_type, headers)
         else:
             headers['Keep-Alive'] = 'timeout=15, max=86'

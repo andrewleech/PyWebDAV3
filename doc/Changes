@@ -123,7 +123,7 @@
 
 - Small fixes for WebDavServer (status not handled correctly) and
   propfind (children are returned from a PROPFIND with "Depth: 0")
-  [Kjetil Ørbekk]
+  [Kjetil Irbekk]
 
 0.8 (Jul 15th 2008)
 -------------------
@@ -160,6 +160,7 @@
 - Some minor bugfixes and integration changes.
 - Added instance counter to make multiple instances possible
 - Extended --help text a bit
+  [Simon Pamies]
 
 0.6
 ---
@@ -176,7 +177,8 @@
 - Added logging facilities
 - Added extended arguments
 
-- some more things I can't remember (spamsch)
+- some more things I can't remember
+  [Simon Pamies]
 
 Changes since 0.5.1
 -------------------

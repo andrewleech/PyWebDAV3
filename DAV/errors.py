@@ -66,3 +66,14 @@ class DAV_Forbidden(DAV_Error):
             DAV_Error.__init__(self,403)
         pass
 
+class DAV_Requested_Range_Not_Satisfiable(DAV_Error):
+    """ none of the range-specifier values overlap the current extent 
+    of the selected resource """
+    
+    def __init__(self, *args):
+        if len(args):
+            DAV_Error.__init__(self, 416, args[0])
+        else:
+            DAV_Error.__init__(self, 416)
+        pass
+

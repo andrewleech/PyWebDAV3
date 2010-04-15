@@ -1,20 +1,3 @@
-#Copyright (c) 1999 Christian Scholz (ruebe@aachen.heimat.de)
-#
-#This library is free software; you can redistribute it and/or
-#modify it under the terms of the GNU Library General Public
-#License as published by the Free Software Foundation; either
-#version 2 of the License, or (at your option) any later version.
-#
-#This library is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#Library General Public License for more details.
-#
-#You should have received a copy of the GNU Library General Public
-#License along with this library; if not, write to the Free
-#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-#MA 02111-1307, USA
-
 """
     Python WebDAV Server.
 
@@ -62,6 +45,8 @@ import StringIO
 
 log = logging.getLogger(__name__)
 
+BUFFER_SIZE = 128 * 1000 # 128 Ko
+
 class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     """Simple DAV request handler with
 
@@ -86,8 +71,9 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     server_version = "DAV/" + __version__
     encode_threshold = 1400 # common MTU
 
-    def send_body(self,DATA,code,msg,desc,ctype='application/octet-stream',headers={}):
+    def send_body(self, DATA, code = None, msg = None, desc = None, ctype='application/octet-stream', headers={}):
         """ send a body in one part """
+        log.debug("Use send_body method")
 
         self.send_response(code,message=msg)
         self.send_header("Connection", "close")
@@ -103,7 +89,11 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                     and len(DATA) > self.encode_threshold:
                 buffer = StringIO.StringIO()
                 output = gzip.GzipFile(mode='wb', fileobj=buffer)
-                output.write(DATA)
+                if isinstance(DATA, str):
+                    output.write(DATA)
+                else:
+                    for buf in DATA:
+                        output.write(buf)
                 output.close()
                 buffer.seek(0)
                 DATA = buffer.getvalue()
@@ -116,42 +106,101 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         self.end_headers()
         if DATA:
-            self._append(DATA)
+            if isinstance(DATA, str):
+                log.debug("Don't use iterator")
+                self._append(DATA)
+            else:
+                if self._config.DAV.getboolean('http_response_use_iterator'):
+                    # Use iterator to reduce using memory
+                    log.debug("Use iterator")
+                    self.wfile.write(self._buffer)
+                    self.wfile.flush()
+                    self._buffer=""
+                    for buf in DATA:
+                        self.wfile.write(buf)
+                        self.wfile.flush()
+                else:
+                    # Don't use iterator, it's a compatibility option
+                    log.debug("Don't use iterator")
+                    self._append(DATA.read())
 
-    def send_body_chunks_if_http11(self, DATA, code, msg, desc, ctype='text/xml; encoding="utf-8"'):
-        if self.request_version == 'HTTP/1.0':
-            self.send_body(DATA, code, msg, desc, ctype)
+    def send_body_chunks_if_http11(self, DATA, code, msg = None, desc = None, 
+                                   ctype='text/xml; encoding="utf-8"', 
+                                   headers={}):
+        if (
+            self.request_version == 'HTTP/1.0' or
+            not self._config.DAV.getboolean('chunked_http_response')
+        ):
+            self.send_body(DATA, code, msg, desc, ctype, headers)
         else:
-            self.send_body_chunks(DATA, code, msg, desc, ctype)
-
+            self.send_body_chunks(DATA, code, msg, desc, ctype, headers)
+ 
     def send_body_chunks(self, DATA, code, msg, desc, ctype='text/xml; encoding="utf-8"'):
         """ send a body in chunks """
 
         self.responses[207]=(msg,desc)
         self.send_response(code,message=msg)
         self.send_header("Content-type", ctype)
-        self.send_header("Connection", "close")
         self.send_header("Transfer-Encoding", "chunked")
         self.send_header('Date', rfc1123_date())
         self.send_header('DAV', DAV_VERSION_2['version'])
 
-        if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
-                and len(DATA) > self.encode_threshold:
+        for a,v in headers.items():
+            self.send_header(a,v)
+
+        if DATA:
+            if (
+                ('gzip' in self.headers.get('Accept-Encoding', '').split(',')) and
+                (len(DATA) > self.encode_threshold)
+            ):
                 buffer = StringIO.StringIO()
                 output = gzip.GzipFile(mode='wb', fileobj=buffer)
-                output.write(DATA)
+                if isinstance(DATA, str):
+                    output.write(DATA)
+                else:
+                    for buf in DATA:
+                        output.write(buf)
                 output.close()
                 buffer.seek(0)
                 DATA = buffer.getvalue()
                 self.send_header('Content-Encoding', 'gzip')
 
+            self.send_header('Content-Length', len(DATA))
+            self.send_header('Content-Type', ctype)
+
+        else:
+            self.send_header('Content-Length', 0)
+
         self.end_headers()
 
-        self._append(hex(len(DATA))[2:]+"\r\n")
-        self._append(DATA)
-        self._append("\r\n")
-        self._append("0\r\n")
-        self._append("\r\n")
+        if DATA:
+            if isinstance(DATA, str):
+                self._append(hex(len(DATA))[2:]+"\r\n")
+                self._append(DATA)
+                self._append("\r\n")
+                self._append("0\r\n")
+                self._append("\r\n")
+            else:
+                if self._config.DAV.getboolean('http_response_use_iterator'):
+                    # Use iterator to reduce using memory
+                    self.wfile.write(self._buffer)
+                    self.wfile.flush()
+                    self._buffer=""
+
+                    for buf in DATA:
+                        self.wfile.write(hex(len(buf))[2:]+"\r\n")
+                        self.wfile.write(buf)
+                        self.wfile.write("\r\n")
+
+                    self.wfile.write("0\r\n")
+                    self.wfile.write("\r\n")
+                else:
+                    # Don't use iterator, it's a compatibility option
+                    self._append(hex(len(DATA))[2:]+"\r\n")
+                    self._append(DATA.read())
+                    self._append("\r\n")
+                    self._append("0\r\n")
+                    self._append("\r\n")
 
     ### HTTP METHODS called by the server
 
@@ -174,6 +223,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         self.send_header('MS-Author-Via', 'DAV') # this is for M$
         self.end_headers()
+        self.log_request(status_code)
 
     def _HEAD_GET(self, with_body=False):
         """ Returns headers and body for given resource """
@@ -199,18 +249,35 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             content_type = dc.get_prop(uri,"DAV:","getcontenttype")
         except DAV_NotFound: content_type = "application/octet-stream"
 
+        range = None
+        status_code = 200
+        if 'Range' in self.headers:
+            p = self.headers['Range'].find("bytes=")
+            if p != -1:
+                range = self.headers['Range'][p + 6:].split("-")
+                status_code = 206
+
         # get the data
         try:
-            data = dc.get_data(uri)
+            data = dc.get_data(uri, range)
         except DAV_Error, (ec,dd):
             self.send_status(ec)
-            return 
+            return ec
 
         # send the data
         if with_body is False:
             data = None
 
-        self.send_body(data, '200', "OK", "OK", content_type, headers)
+        if isinstance(data, str):
+            self.send_body(data, status_code, None, None, content_type, headers)
+        else:
+            headers['Keep-Alive'] = 'timeout=15, max=86'
+            headers['Connection'] = 'Keep-Alive'
+            self.send_body_chunks_if_http11(data, status_code, None, None, 
+                                            content_type, headers)
+
+        return status_code
+            
 
     def do_HEAD(self):
         """ Send a HEAD response: Retrieves resource information w/o body """
@@ -220,7 +287,17 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     def do_GET(self):
         """Serve a GET request."""
 
-        return self._HEAD_GET(with_body=True)
+        log.debug(self.headers)
+
+        try:
+            status_code = self._HEAD_GET(with_body=True)
+            self.log_request(status_code)
+            return status_code
+        except IOError, e:
+            if e.errno == 32:
+                self.log_request(206)
+            else:
+                raise
 
     def do_TRACE(self):
         """ This will always fail because we can not reproduce HTTP requests. 
@@ -300,7 +377,9 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         try:
             dc.mkcol(uri)
             self.send_status(201)
+            self.log_request(201)
         except DAV_Error, (ec,dd):
+            self.log_request(ec)
             return self.send_status(ec)
 
     def do_DELETE(self):
@@ -329,6 +408,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                         break
             if not test:
                 self.send_status(412)
+                self.log_request(412)
                 return
 
         # Handle If-None-Match
@@ -350,6 +430,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                         break
             if not test:
                 self.send_status(412)
+                self.log_request(412)
                 return
 
         # locked resources are not allowed to delete
@@ -398,6 +479,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                         break
             if not test:
                 self.send_status(412)
+                self.log_request(412)
                 return
 
         # Handle If-None-Match
@@ -424,6 +506,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                         break
             if not test:
                 self.send_status(412)
+                self.log_request(412)
                 return
 
         # locked resources are not allowed to be overwritten
@@ -451,7 +534,9 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 if found:
                     break
             if not found:
-                return self.send_body(None, '423', 'Locked', 'Locked')
+                res = self.send_body(None, '423', 'Locked', 'Locked')
+                self.log_request(423)
+                return res
 
         # Handle expect
         expect = self.headers.get('Expect', '')
@@ -490,15 +575,17 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             if self.headers.has_key("Content-Length"):
                 l=self.headers['Content-Length']
                 log.debug("do_PUT: Content-Length = %s" % l)
-                body=self.rfile.read(atoi(l))
+                body=self._readNoChunkedData(atoi(l))
+            else:
+                log.debug("do_PUT: Content-Length = empty")
 
             try:
                 dc.put(uri, body, content_type)
             except DAV_Error, (ec,dd):
                 return self.send_status(ec)
 
-
             self.send_body(None, '201', 'Created', '', headers=headers)
+            self.log_request(201)
 
     def _readChunkedData(self):
         l = int(self.rfile.readline(), 16)
@@ -507,6 +594,29 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             yield buf
             self.rfile.readline()
             l = int(self.rfile.readline(), 16)
+
+    def _readNoChunkedData(self, content_length):
+        if self._config.DAV.getboolean('http_request_use_iterator'):
+            # Use iterator to reduce using memory
+            return self.__readNoChunkedDataWithIterator(content_length)
+        else:
+            # Don't use iterator, it's a compatibility option
+            return self.__readNoChunkedDataWithoutIterator(content_length)
+        
+    def __readNoChunkedDataWithIterator(self, content_length):
+        while True:
+            if content_length > BUFFER_SIZE:
+                buf = self.rfile.read(BUFFER_SIZE)
+                content_length -= BUFFER_SIZE
+                yield buf
+            else:
+                buf = self.rfile.read(content_length)
+                yield buf
+                break
+
+    def __readNoChunkedDataWithoutIterator(self, content_length):
+        return self.rfile.read(content_length)
+
 
     def do_COPY(self):
         """ copy one resource to another """

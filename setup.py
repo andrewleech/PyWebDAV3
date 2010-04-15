@@ -11,14 +11,38 @@ from setuptools import setup
 VERSION = open('VERSION', 'r').read()
 VERSION = VERSION.replace('\n', '')
 
+CHANGES = open('doc/Changes', 'r').read()
+
 DOC = """
-WebDAV library for python. Consists of a server and the DAV package that provides WebDAV server(!) functionality.
-Currently supports WebDAV level 1 and level 2 (LOCK, UNLOCK) making it play nice with cadaver, Mac OS X Finder, Windows Explorer or even iCal.
+WebDAV library for python. 
+
+Consists of a *server* that is ready to run
+Serve and the DAV package that provides WebDAV server(!) functionality.
+
+Currently supports 
+
+    * WebDAV level 1
+    * Level 2 (LOCK, UNLOCK)
+    * Experimental iterator support
+
+It plays nice with
+
+    * Mac OS X Finder
+    * Windows Explorer
+    * iCal
+    * cadaver
+    * Nautilus
+
+This package does *not* provide client functionality.
+
+Installation
+============
 
 After installation of this package you will have a new script in you $PYTHON/bin directory called
 *davserver*. This serves as the main entry point to the server.
 
-This package does *not* provide client functionality.
+Examples
+========
 
 Example (using easy_install)::
 
@@ -33,7 +57,12 @@ Example (unpacking file locally)::
     davserver -D /tmp -n
 
 For more information: http://code.google.com/p/pywebdav/
-"""
+
+Changes
+=======
+
+%s
+""" % CHANGES
 
 from distutils.core import setup
 setup(name='PyWebDAV',

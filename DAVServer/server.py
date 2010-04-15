@@ -29,7 +29,8 @@ import logging
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('pywebdav')
 
-import BaseHTTPServer
+from BaseHTTPServer import HTTPServer
+from SocketServer import ThreadingMixIn
 
 try:
     import DAV
@@ -53,6 +54,9 @@ LEVELS = {'debug': logging.DEBUG,
           'error': logging.ERROR,
           'critical': logging.CRITICAL}
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handle requests in a separate thread."""
+
 def runserver(
          port = 8008, host='localhost',
          directory='/tmp',
@@ -61,7 +65,7 @@ def runserver(
          user = '',
          password = '',
          handler = DAVAuthHandler,
-         server = BaseHTTPServer.HTTPServer):
+         server = ThreadedHTTPServer):
 
     directory = directory.strip()
     directory = directory.rstrip('/')
@@ -250,6 +254,12 @@ def run():
             daemonize = True
             daemonaction = a
 
+    chunked_http_response = 1
+
+    # This feature are disabled because they are unstable
+    http_request_use_iterator = 0
+    http_response_use_iterator = 0
+
     conf = None
     if configfile != '':
         log.info('Reading configuration from %s' % configfile)
@@ -271,6 +281,15 @@ def run():
         lockemulation = dv.lockemulation
         mimecheck = dv.mimecheck
 
+        if 'chunked_http_response' not in dv:
+            dv.set('chunked_http_response', chunked_http_response)
+
+        if 'http_request_use_iterator' not in dv:
+            dv.set('http_request_use_iterator', http_request_use_iterator)
+
+        if 'http_response_use_iterator' not in dv:
+            dv.set('http_response_use_iterator', http_response_use_iterator)
+
     else:
 
         _dc = { 'verbose' : verbose,
@@ -284,7 +303,11 @@ def run():
                 'daemonaction' : daemonaction,
                 'counter' : counter,
                 'lockemulation' : lockemulation,
-                'mimecheck' : mimecheck}
+                'mimecheck' : mimecheck,
+                'chunked_http_response': chunked_http_response,
+                'http_request_use_iterator': http_request_use_iterator,
+                'http_response_use_iterator': http_response_use_iterator
+                }
 
         conf = setupDummyConfig(**_dc)
 
@@ -315,6 +338,10 @@ def run():
     if type(port) == type(''):
         port = int(port.strip())
 
+    log.info('chunked_http_response feature %s' % (conf.DAV.getboolean('chunked_http_response') and 'ON' or 'OFF' ))
+    log.info('http_request_use_iterator feature %s' % (conf.DAV.getboolean('http_request_use_iterator') and 'ON' or 'OFF' ))
+    log.info('http_response_use_iterator feature %s' % (conf.DAV.getboolean('http_response_use_iterator') and 'ON' or 'OFF' ))
+ 
     if daemonize:
 
         # check if pid file exists

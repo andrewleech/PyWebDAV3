@@ -154,7 +154,6 @@ class AuthRequestHandler:
         """Override send_response to use the correct http version
            in the response."""
 
-        self.log_request(code)
         if message is None:
             if self.responses.has_key(code):
                 message = self.responses[code][0]

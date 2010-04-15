@@ -8,6 +8,7 @@ GENERAL
 	- Changes
     - Name
 
+- use a better solution than DAV/INI_Parse.py [Stephane Klein]
 - create WSGI server version [Stephane Klein]
 
 MOVE

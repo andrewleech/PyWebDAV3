@@ -32,6 +32,7 @@ from DAV.davcmd import copyone, copytree, moveone, movetree, delone, deltree
 
 log = logging.getLogger(__name__)
 
+BUFFER_SIZE = 128 * 1000 
 # include magic support to correctly determine mimetypes
 MAGIC_AVAILABLE = False
 try:
@@ -39,6 +40,32 @@ try:
     MAGIC_AVAILABLE = True
 except ImportError:
     pass
+
+class Resource(object):
+    # XXX this class is ugly
+    def __init__(self, fp, file_size):
+        self.__fp = fp
+        self.__file_size = file_size
+
+    def __len__(self):
+        return self.__file_size
+
+    def __iter__(self):
+        while 1:
+            data = self.__fp.read(BUFFER_SIZE)
+            if not data:
+                break
+            yield data
+            time.sleep(0.005)
+        self.__fp.close()
+
+    def read(self, length = 0):
+        if length == 0:
+            length = self.__file_size
+
+        data = self.__fp.read(length)
+        return data
+        
 
 class FilesystemHandler(dav_interface):
     """ 
@@ -115,20 +142,37 @@ class FilesystemHandler(dav_interface):
 
         return filelist
 
-    def get_data(self,uri):
+    def get_data(self,uri, range = None):
         """ return the content of an object """
         path=self.uri2local(uri)
         if os.path.exists(path):
             if os.path.isfile(path):
-                s=""
-                fp=open(path,"r")
-                while 1:
-                    a=fp.read()
-                    if not a: break
-                    s=s+a
-                fp.close()
-                log.info('Serving content of %s' % uri)
-                return s
+                file_size = os.path.getsize(path)
+                if range == None:
+                    fp=open(path,"r")
+                    log.info('Serving content of %s' % uri)
+                    return Resource(fp, file_size)
+                else:
+                    if range[0] == '':
+                        range[0] = 0
+                    else:
+                        range[0] = int(range[0])
+
+                    if range[1] == '':
+                        range[1] = file_size
+                    else:
+                        range[1] = int(range[1])
+
+                    if range[0] > file_size:
+                        raise DAV_Requested_Range_Not_Satisfiable
+
+                    if range[1] > file_size:
+                        range[1] = file_size
+
+                    fp=open(path,"r")
+                    fp.seek(range[0])
+                    log.info('Serving range %s -> %s content of %s' % (range[0], range[1], uri))
+                    return Resource(fp, range[1] - range[0])
             else:
                 # also raise an error for collections
                 # don't know what should happen then..

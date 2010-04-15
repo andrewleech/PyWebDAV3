@@ -1,3 +1,10 @@
+
+0.9.4 (April 15 2010)
+---------------------
+    
+- Add somme configuration setting variable to enable/disable iterator and chunk support
+  [Stephane Klein]
+
 - Removed os.system calls thus fixing issue 32
   [Simon Pamies]
 
@@ -24,7 +31,7 @@
   [Stephane Klein]
 
 0.9.3 (July 2 2009)
---
+-------------------
 
 - Setting WebDAV v2 as default because LOCK and UNLOCK seem
   to be stable by now. -J parameter is ignored and will go away.
@@ -63,7 +70,7 @@
   [Cedric Krier]
 
 0.9.2 (May 11 2009)
---
+-------------------
 
 - Fixed COPY, MOVE, DELETE to support locked
   resources
@@ -104,7 +111,7 @@
   [Cedric Krier]
 
 0.9.1 (May 4th 2009)
---
+--------------------
 
 - Restructured the structure a bit: Made server package
   a real python package. Adapted error messages. Prepared
@@ -119,7 +126,7 @@
   [Kjetil Ørbekk]
 
 0.8 (Jul 15th 2008)
----
+-------------------
 
 - First try of an implementation of the LOCK and UNLOCK features.
   Still very incomplete (read: very incomplete) and not working

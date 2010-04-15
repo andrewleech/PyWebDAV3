@@ -1,3 +1,12 @@
+- Removed os.system calls thus fixing issue 32
+  [Simon Pamies]
+
+- Fixed issue 14
+  [Simon Pamies]
+
+- Removed magic.py module - replaced with mimetypes module
+  [Simon Pamies]
+
 - Print User-Agent information in log request.
   [Stephane Klein]
 

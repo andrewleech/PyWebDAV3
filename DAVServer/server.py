@@ -167,7 +167,7 @@ def setupDummyConfig(**kw):
             self.__dict__.update(**kw)
 
         def getboolean(self, name):
-            return (str(getattr(self, name, 0)) in ('1', "yes", "true", "on"))
+            return (str(getattr(self, name, 0)) in ('1', "yes", "true", "on", "True"))
 
     class DummyConfig:
         DAV = DummyConfigDAV(**kw)

@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 # include magic support to correctly determine mimetypes
 MAGIC_AVAILABLE = False
 try:
-    import magic
+    import mimetypes
     MAGIC_AVAILABLE = True
 except ImportError:
     pass
@@ -189,7 +189,7 @@ class FilesystemHandler(dav_interface):
                         or self.mimecheck is False:
                     return 'application/octet-stream'
                 else:
-                    ret = magic.file(path)
+                    ret, encoding = mimetypes.guess_type(path)
 
                     # for non mimetype related result we
                     # simply return an appropriate type

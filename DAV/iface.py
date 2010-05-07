@@ -101,7 +101,7 @@ class dav_interface:
     ### DATA methods (for GET and PUT)
     ###
 
-    def get_data(self,uri):
+    def get_data(self, uri, range=None):
         """ return the content of an object
 
         return data or raise an exception

@@ -153,15 +153,15 @@ class FilesystemHandler(dav_interface):
                     log.info('Serving content of %s' % uri)
                     return Resource(fp, file_size)
                 else:
-                    if range[0] == '':
-                        range[0] = 0
-                    else:
-                        range[0] = int(range[0])
-
                     if range[1] == '':
                         range[1] = file_size
                     else:
                         range[1] = int(range[1])
+
+                    if range[0] == '':
+                        range[0] = file_size - range[1]
+                    else:
+                        range[0] = int(range[0])
 
                     if range[0] > file_size:
                         raise DAV_Requested_Range_Not_Satisfiable

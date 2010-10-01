@@ -109,7 +109,7 @@ class dav_interface:
         """
         raise DAV_NotFound
 
-    def put(self,uri,data):
+    def put(self, uri, data, content_type=None):
         """ write an object to the repository
 
         return the location uri or raise an exception

@@ -437,17 +437,19 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         if self._l_isLocked(uri):
             return self.send_body(None, '423', 'Locked', 'Locked')
 
-        dl = DELETE(uri,dc)
-        if dc.is_collection(uri):
-            res=dl.delcol()
-            if res:
-                self.send_status(207,body=res)
+        try:
+            dl = DELETE(uri,dc)
+            if dc.is_collection(uri):
+                res=dl.delcol()
+                if res:
+                    self.send_status(207,body=res)
+                else:
+                    self.send_status(204)
             else:
-                self.send_status(204)
-        else:
-            res=dl.delone() or 204
-            self.send_status(res)
-
+                res=dl.delone() or 204
+                self.send_status(res) 
+        except DAV_NotFound:
+            self.send_body(None, '404', 'Not Found', 'Not Found')
 
     def do_PUT(self):
         dc=self.IFACE_CLASS

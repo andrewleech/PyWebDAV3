@@ -98,6 +98,7 @@ class AuthRequestHandler:
 
         # needed by send_error
         self.command = requestline
+        self.headers = {}
 
         if requestline[-2:] == '\r\n':
             requestline = requestline[:-2]

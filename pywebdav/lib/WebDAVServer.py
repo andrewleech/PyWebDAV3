@@ -1,19 +1,4 @@
-"""
-    Python WebDAV Server.
-
-    This module builds on AuthServer by implementing the standard DAV
-    methods.
-
-    Subclass this class and specify an IFACE_CLASS. See example.
-
-"""
-
 DEBUG=None
-
-from DAV.utils import VERSION, AUTHOR
-__version__ = VERSION
-__author__  = AUTHOR
-
 
 import os
 import sys
@@ -43,6 +28,8 @@ from locks import LockManager
 import gzip
 import StringIO
 
+from pywebdav.lib import VERSION
+
 log = logging.getLogger(__name__)
 
 BUFFER_SIZE = 128 * 1000 # 128 Ko
@@ -68,7 +55,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
     """
 
-    server_version = "DAV/" + __version__
+    server_version = "DAV/" + VERSION
     encode_threshold = 1400 # common MTU
 
     def send_body(self, DATA, code = None, msg = None, desc = None, ctype='application/octet-stream', headers={}):

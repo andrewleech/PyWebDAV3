@@ -24,11 +24,10 @@ import logging
 import types
 import shutil
 
-from DAV.constants import COLLECTION, OBJECT
-from DAV.errors import *
-from DAV.iface import *
-
-from DAV.davcmd import copyone, copytree, moveone, movetree, delone, deltree
+from pywebdav.lib.constants import COLLECTION, OBJECT
+from pywebdav.lib.errors import *
+from pywebdav.lib.iface import *
+from pywebdav.lib.davcmd import copyone, copytree, moveone, movetree, delone, deltree
 
 log = logging.getLogger(__name__)
 

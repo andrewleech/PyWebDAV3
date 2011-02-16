@@ -1,20 +1,3 @@
-#Copyright (c) 1999 Christian Scholz (ruebe@aachen.heimat.de)
-#
-#This library is free software; you can redistribute it and/or
-#modify it under the terms of the GNU Library General Public
-#License as published by the Free Software Foundation; either
-#version 2 of the License, or (at your option) any later version.
-#
-#This library is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#Library General Public License for more details.
-#
-#You should have received a copy of the GNU Library General Public
-#License along with this library; if not, write to the Free
-#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-#MA 02111-1307, USA
-
 import logging
 
 log = logging.getLogger(__name__)
@@ -22,6 +5,7 @@ log = logging.getLogger(__name__)
 try:
     import MySQLdb
 except ImportError:
+    log.info('No SQL support - MySQLdb missing...')
     pass
 
 import sys
@@ -84,3 +68,4 @@ class Mconn:
     def __init__(self,user,password,host,port,db):
         self.db=0
         self.connect(user,password,host,port,db)
+

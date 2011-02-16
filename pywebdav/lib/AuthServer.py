@@ -1,20 +1,3 @@
-#Copyright (c) 2009 Simon Pamies (s.pamies@banality.de)
-#
-#This library is free software; you can redistribute it and/or
-#modify it under the terms of the GNU Library General Public
-#License as published by the Free Software Foundation; either
-#version 2 of the License, or (at your option) any later version.
-#
-#This library is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#Library General Public License for more details.
-#
-#You should have received a copy of the GNU Library General Public
-#License along with this library; if not, write to the Free
-#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-#MA 02111-1307, USA
-
 """
     Authenticating HTTP Server
 
@@ -22,10 +5,6 @@
     basic authentication
 
 """
-
-from DAV.utils import VERSION, AUTHOR
-__version__ = VERSION
-__author__  = AUTHOR
 
 import os
 import sys
@@ -39,6 +18,8 @@ import BaseHTTPServer
 import base64
 
 from string import atoi,split
+
+from pywebdav.lib import VERSION, AUTHOR
 
 AUTH_ERROR_MSG="""<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <HTML><HEAD>
@@ -82,7 +63,7 @@ class AuthRequestHandler:
     the credentials required.<P>
     </BODY></HTML>"""
 
-    server_version = "AuthHTTP/" + __version__
+    server_version = "AuthHTTP/" + VERSION
 
     def _log(self, message):
         pass

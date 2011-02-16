@@ -1,20 +1,4 @@
 #!/usr/bin/env python
-#Copyright (c) 1999-2005 Christian Scholz (cs@comlounge.net)
-#
-#This library is free software; you can redistribute it and/or
-#modify it under the terms of the GNU Library General Public
-#License as published by the Free Software Foundation; either
-#version 2 of the License, or (at your option) any later version.
-#
-#This library is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#Library General Public License for more details.
-#
-#You should have received a copy of the GNU Library General Public
-#License along with this library; if not, write to the Free
-#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-#MA 02111-1307, USA
 
 """
 Python WebDAV Server.
@@ -33,20 +17,18 @@ from BaseHTTPServer import HTTPServer
 from SocketServer import ThreadingMixIn
 
 try:
-    import DAV
+    import pywebdav.lib
 except ImportError:
-    print 'DAV package not found! Please install into site-packages or set PYTHONPATH!'
+    print 'pywebdav.lib package not found! Please install into site-packages or set PYTHONPATH!'
     sys.exit(2)
-
-from DAV.utils import VERSION, AUTHOR
-__version__ = VERSION
-__author__  = AUTHOR
 
 from fileauth import DAVAuthHandler
 from mysqlauth import MySQLAuthHandler
 from fshandler import FilesystemHandler
 from daemonize import startstop
-from DAV.INI_Parse import Configuration
+
+from pywebdav.lib.INI_Parse import Configuration
+from pywebdav.lib import VERSION, AUTHOR
 
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
@@ -162,7 +144,7 @@ Parameters:
     -h, --help      Show this screen
 
 Please send bug reports and feature requests to %s
-""" % (__version__, __author__)
+""" % (VERSION, AUTHOR)
 
 def setupDummyConfig(**kw):
 
@@ -321,15 +303,15 @@ def run():
         sys.exit(3)
 
     if daemonaction != 'stop':
-        log.info('Starting up PyWebDAV server (version %s)' % __version__)
+        log.info('Starting up PyWebDAV server (version %s)' % VERSION)
     else:
-        log.info('Stopping PyWebDAV server (version %s)' % __version__)
+        log.info('Stopping PyWebDAV server (version %s)' % VERSION)
 
     if not noauth and daemonaction not in ['status', 'stop']:
         if not user:
             print usage
-            print >>sys.stderr, '>> ERROR: No usable parameter specified!'
-            print >>sys.stderr, '>> Example: davserver -D /home/files -n'
+            print >>sys.stderr, '>> ERROR: No parameter specified!'
+            print >>sys.stderr, '>> Example: davserver -D /tmp -n'
             sys.exit(3)
 
     if daemonaction == 'status':

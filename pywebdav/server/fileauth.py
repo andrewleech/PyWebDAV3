@@ -22,12 +22,13 @@ This is an example implementation of a DAVserver using the DAV package.
 
 """
 
+import sys
 import logging
 
-from DAV.WebDAVServer import DAVRequestHandler
+from pywebdav.lib.WebDAVServer import DAVRequestHandler
+from pywebdav.lib.dbconn import Mconn
+
 from fshandler import FilesystemHandler
-import sys
-from DAV.dbconn import Mconn
 
 log = logging.getLogger()
 

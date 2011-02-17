@@ -1,20 +1,3 @@
-#Copyright (c) 1999 Christian Scholz (ruebe@aachen.heimat.de)
-#
-#This library is free software; you can redistribute it and/or
-#modify it under the terms of the GNU Library General Public
-#License as published by the Free Software Foundation; either
-#version 2 of the License, or (at your option) any later version.
-#
-#This library is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#Library General Public License for more details.
-#
-#You should have received a copy of the GNU Library General Public
-#License along with this library; if not, write to the Free
-#Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-#MA 02111-1307, USA
-
 import sys
 import urlparse
 import os
@@ -37,7 +20,9 @@ MAGIC_AVAILABLE = False
 try:
     import mimetypes
     MAGIC_AVAILABLE = True
+    log.info('Mimetype support ENABLED')
 except ImportError:
+    log.info('Mimetype support DISABLED')
     pass
 
 class Resource(object):
@@ -86,7 +71,7 @@ class FilesystemHandler(dav_interface):
 
         # should we be verbose?
         self.verbose = verbose
-        log.info('Initialized with %s-%s' % (directory, uri))
+        log.info('Initialized with %s %s' % (directory, uri))
 
     def setDirectory(self, path):
         """ Sets the directory """
@@ -143,6 +128,7 @@ class FilesystemHandler(dav_interface):
 
     def get_data(self,uri, range = None):
         """ return the content of an object """
+
         path=self.uri2local(uri)
         if os.path.exists(path):
             if os.path.isfile(path):
@@ -172,6 +158,11 @@ class FilesystemHandler(dav_interface):
                     fp.seek(range[0])
                     log.info('Serving range %s -> %s content of %s' % (range[0], range[1], uri))
                     return Resource(fp, range[1] - range[0])
+            elif os.path.isdir(path):
+                # GET for collections is defined as 'return s/th meaningful' :-)
+                from StringIO import StringIO
+                stio = StringIO('Directory at %s' % uri)
+                return Resource(StringIO('Directory at %s' % uri), stio.len)
             else:
                 # also raise an error for collections
                 # don't know what should happen then..

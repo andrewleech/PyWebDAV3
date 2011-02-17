@@ -1,6 +1,9 @@
 
 from BaseHTTPServer import BaseHTTPRequestHandler
 
+import logging
+log = logging.getLogger('pywebdav')
+
 class BufferedHTTPRequestHandler(BaseHTTPRequestHandler):
     """
     Buffering HTTP Request Handler
@@ -39,6 +42,9 @@ class BufferedHTTPRequestHandler(BaseHTTPRequestHandler):
         self.wfile.flush()
         self.__buffer=""
 
+    def _verbose(self):
+        return self.server.RequestHandlerClass.verbose
+
     def handle(self):
         """ Handle a HTTP request """
 
@@ -54,6 +60,9 @@ class BufferedHTTPRequestHandler(BaseHTTPRequestHandler):
     def end_headers(self):
         """Send the blank line ending the MIME headers."""
         if self.request_version != 'HTTP/0.9':
+            if self._verbose():
+                log.info('Headers:\n%s' % self.__buffer)
+
             self._append("\r\n")
 
     def send_response(self, code, message=None):
@@ -70,7 +79,10 @@ class BufferedHTTPRequestHandler(BaseHTTPRequestHandler):
                     (self.protocol_version, str(code), message))
 
         self.send_header('Server', self.version_string())
+
         self.send_header('Connection', 'close')
+        self.close_connection = 1
+
         self.send_header('Date', self.date_time_string())
 
     protocol_version="HTTP/1.1"

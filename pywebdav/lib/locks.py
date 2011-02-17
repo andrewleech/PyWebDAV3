@@ -94,6 +94,10 @@ class LockManager:
         uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.unquote(uri)
 
+        # check lock token - must contain a dash
+        if not self.headers.get('Lock-Token', '').find('-')>0:
+            return self.send_status(400)
+
         token = tokenFinder(self.headers.get('Lock-Token'))
         if self._l_isLocked(uri):
             self._l_delLock(token)
@@ -105,7 +109,7 @@ class LockManager:
 
         dc = self.IFACE_CLASS
 
-        log.debug('LOCKing resource %s' % self.headers)
+        log.info('LOCKing resource %s' % self.headers)
 
         body = None
         if self.headers.has_key('Content-Length'):
@@ -116,11 +120,11 @@ class LockManager:
 
         uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.unquote(uri)
-        log.debug('do_LOCK: uri = %s' % uri)
+        log.info('do_LOCK: uri = %s' % uri)
 
         ifheader = self.headers.get('If')
         alreadylocked = self._l_isLocked(uri)
-        log.debug('do_LOCK: alreadylocked = %s' % alreadylocked)
+        log.info('do_LOCK: alreadylocked = %s' % alreadylocked)
 
         if body and alreadylocked:
             # Full LOCK request but resource already locked

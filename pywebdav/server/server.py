@@ -121,8 +121,7 @@ Parameters:
     -m, --mysql     Pass this parameter if you want MySQL based authentication.
                     If you want to use MySQL then the usage of a configuration
                     file is mandatory.
-    -J, --lockemu   Activate experimental LOCK and UNLOCK mode (WebDAV Version 2).
-                    Currently know to work but needs more tests. Default is ON.
+    -J, --nolock    Deactivate LOCK and UNLOCK mode (WebDAV Version 2).
     -M, --nomime    Deactivate mimetype sniffing. Sniffing is based on magic numbers
                     detection but can be slow under heavy load. If you are experiencing
                     speed problems try to use this parameter.
@@ -138,7 +137,7 @@ Parameters:
                         restart - Restart complete server
                         status  - Returns status of server
 
-    -v, --verbose   Be verbose
+    -v, --verbose   Be verbose.
     -l, --loglevel  Select the log level : DEBUG, INFO, WARNING, ERROR, CRITICAL
                     Default is WARNING
     -h, --help      Show this screen
@@ -182,7 +181,7 @@ def run():
         opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:Ml:',
                 ['host=', 'port=', 'directory=', 'user=', 'password=',
                  'daemon=', 'noauth', 'help', 'verbose', 'mysql', 
-                 'icounter=', 'config=', 'lockemu', 'nomime', 'loglevel'])
+                 'icounter=', 'config=', 'nolock', 'nomime', 'loglevel'])
     except getopt.GetoptError, e:
         print usage
         print '>>>> ERROR: %s' % str(e)
@@ -198,8 +197,8 @@ def run():
         if o in ['-M', '--nomime']:
             mimecheck = False
 
-        if o in ['-J', '--lockemu']:
-            lockemulation = True
+        if o in ['-J', '--nolock']:
+            lockemulation = False
 
         if o in ['-c', '--config']:
             configfile = a
@@ -297,6 +296,10 @@ def run():
         loglevel = 'info'
 
     logging.getLogger().setLevel(LEVELS[loglevel])
+
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(formatter)
 
     if mysql == True and configfile == '':
         log.error('You can only use MySQL with configuration file!')

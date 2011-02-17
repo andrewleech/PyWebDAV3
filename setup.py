@@ -97,9 +97,9 @@ setup(name='PyWebDAV',
                   'http',
                   'rfc2518',
                   'rfc 2518'],
-      packages=['DAV', 'DAVServer'],
+      packages=['pywebdav'],
       zip_safe=False,
       entry_points={
-          'console_scripts' : ['davserver = DAVServer.server:run']
+          'console_scripts' : ['davserver = pywebdav.server.server:run']
       }
       )

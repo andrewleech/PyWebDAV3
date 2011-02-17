@@ -30,6 +30,8 @@ import StringIO
 
 from pywebdav.lib import VERSION
 
+from xml.parsers.expat import ExpatError
+
 log = logging.getLogger(__name__)
 
 BUFFER_SIZE = 128 * 1000 # 128 Ko
@@ -66,7 +68,8 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_header("Connection", "close")
         self.send_header("Accept-Ranges", "bytes")
         self.send_header('Date', rfc1123_date())
-        self.send_header('DAV', DAV_VERSION_2['version'])
+
+        self._send_dav_version()
 
         for a,v in headers.items():
             self.send_header(a,v)
@@ -131,7 +134,8 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_header("Content-type", ctype)
         self.send_header("Transfer-Encoding", "chunked")
         self.send_header('Date', rfc1123_date())
-        self.send_header('DAV', DAV_VERSION_2['version'])
+        
+        self._send_dav_version()
 
         for a,v in headers.items():
             self.send_header(a,v)
@@ -190,6 +194,11 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                     self._append("0\r\n")
                     self._append("\r\n")
 
+    def _send_dav_version(self):
+        if self._config.DAV.getboolean('lockemulation') is True:
+            self.send_header('DAV', DAV_VERSION_2['version'])
+        else: self.send_header('DAV', DAV_VERSION_1['version'])
+
     ### HTTP METHODS called by the server
 
     def do_OPTIONS(self):
@@ -199,15 +208,10 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_header("Content-Length", 0)
 
         if self._config.DAV.getboolean('lockemulation') is True:
-            if self._config.DAV.getboolean('verbose') is True:
-                log.info('Activated LOCK,UNLOCK emulation (experimental)')
-
             self.send_header('Allow', DAV_VERSION_2['options'])
-            self.send_header('DAV', DAV_VERSION_2['version'])
+        else: self.send_header('Allow', DAV_VERSION_1['options'])
 
-        else:
-            self.send_header('Allow', DAV_VERSION_1['options'])
-            self.send_header('DAV', DAV_VERSION_1['version'])
+        self._send_dav_version()
 
         self.send_header('MS-Author-Via', 'DAV') # this is for M$
         self.end_headers()
@@ -264,7 +268,6 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                                             content_type, headers)
 
         return status_code
-            
 
     def do_HEAD(self):
         """ Send a HEAD response: Retrieves resource information w/o body """
@@ -274,7 +277,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     def do_GET(self):
         """Serve a GET request."""
 
-        log.debug(self.headers)
+        log.info(self.headers)
 
         try:
             status_code = self._HEAD_GET(with_body=True)
@@ -297,6 +300,10 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         self.send_body(None, '405', 'Method Not Allowed', 'Method Not Allowed')
 
+    def do_PROPPATCH(self):
+        # currently unsupported
+        return self.send_status(423)
+
     def do_PROPFIND(self):
         """ Retrieve properties on defined resource. """
 
@@ -312,7 +319,11 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.unquote(uri)
 
-        pf = PROPFIND(uri, dc, self.headers.get('Depth', 'infinity'), body)
+        try:
+            pf = PROPFIND(uri, dc, self.headers.get('Depth', 'infinity'), body)
+        except ExpatError:
+            # parse error
+            return self.send_status(400)
 
         try:
             DATA = '%s\n' % pf.createResponse()
@@ -357,6 +368,15 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     def do_MKCOL(self):
         """ create a new collection """
 
+        # according to spec body must be empty
+        body = None
+        if self.headers.has_key('Content-Length'):
+            l = self.headers['Content-Length']
+            body = self.rfile.read(atoi(l))
+
+        if body:
+            return self.send_status(415)
+
         dc=self.IFACE_CLASS
         uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri=urllib.unquote(uri)
@@ -375,6 +395,14 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         dc = self.IFACE_CLASS
         uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.unquote(uri)
+
+        # hastags not allowed
+        if uri.find('#')>=0:
+            return self.send_status(404)
+
+        # locked resources are not allowed to delete
+        if self._l_isLocked(uri):
+            return self.send_body(None, '423', 'Locked', 'Locked')
 
         # Handle If-Match
         if self.headers.has_key('If-Match'):
@@ -419,10 +447,6 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 self.send_status(412)
                 self.log_request(412)
                 return
-
-        # locked resources are not allowed to delete
-        if self._l_isLocked(uri):
-            return self.send_body(None, '423', 'Locked', 'Locked')
 
         try:
             dl = DELETE(uri,dc)

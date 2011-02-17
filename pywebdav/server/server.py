@@ -125,6 +125,8 @@ Parameters:
     -M, --nomime    Deactivate mimetype sniffing. Sniffing is based on magic numbers
                     detection but can be slow under heavy load. If you are experiencing
                     speed problems try to use this parameter.
+    -T, --noiter    Deactivate iterator. Use this if you encounter file corruption during 
+                    download. Also disables chunked body response.
     -i, --icounter  If you want to run multiple instances then you have to
                     give each instance it own number so that logfiles and such
                     can be identified. Default is 0
@@ -172,16 +174,18 @@ def run():
     counter = 0
     mysql = False
     lockemulation = True
+    http_response_use_iterator = True
+    chunked_http_response = True
     configfile = ''
     mimecheck = True
     loglevel = 'warning'
 
     # parse commandline
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:Ml:',
+        opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:Ml:T',
                 ['host=', 'port=', 'directory=', 'user=', 'password=',
                  'daemon=', 'noauth', 'help', 'verbose', 'mysql', 
-                 'icounter=', 'config=', 'nolock', 'nomime', 'loglevel'])
+                 'icounter=', 'config=', 'nolock', 'nomime', 'loglevel', 'noiter'])
     except getopt.GetoptError, e:
         print usage
         print '>>>> ERROR: %s' % str(e)
@@ -199,6 +203,10 @@ def run():
 
         if o in ['-J', '--nolock']:
             lockemulation = False
+
+        if o in ['-T', '--noiter']:
+            http_response_use_iterator = False
+            chunked_http_response = False
 
         if o in ['-c', '--config']:
             configfile = a
@@ -234,9 +242,6 @@ def run():
         if o in ['-d', '--daemon']:
             daemonize = True
             daemonaction = a
-
-    chunked_http_response = 1
-    http_response_use_iterator = 1
 
     # This feature are disabled because they are unstable
     http_request_use_iterator = 0

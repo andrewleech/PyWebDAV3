@@ -175,9 +175,9 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             else:
                 if self._config.DAV.getboolean('http_response_use_iterator'):
                     # Use iterator to reduce using memory
-                    self.wfile.write(self._buffer)
+                    self.wfile.write(self._BufferedHTTPRequestHandler__buffer)
                     self.wfile.flush()
-                    self._buffer=""
+                    self._BufferedHTTPRequestHandler__buffer=""
 
                     for buf in DATA:
                         self.wfile.write(hex(len(buf))[2:]+"\r\n")

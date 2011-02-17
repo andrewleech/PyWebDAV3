@@ -236,10 +236,10 @@ def run():
             daemonaction = a
 
     chunked_http_response = 1
+    http_response_use_iterator = 1
 
     # This feature are disabled because they are unstable
     http_request_use_iterator = 0
-    http_response_use_iterator = 0
 
     conf = None
     if configfile != '':

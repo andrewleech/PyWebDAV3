@@ -87,6 +87,10 @@ def runserver(
         handler.IFACE_CLASS.mimecheck = False
         log.info('Disabled mimetype sniffing (All files will have type application/octet-stream)')
 
+    if handler._config.DAV.baseurl:
+        log.info('Using %s as base url for PROPFIND requests' % handler._config.DAV.baseurl)
+    handler.IFACE_CLASS.baseurl = handler._config.DAV.baseurl
+
     # initialize server on specified port
     runner = server( (host, port), handler )
     print('Listening on %s (%i)' % (host, port))
@@ -112,6 +116,10 @@ Parameters:
                     The user that runs this server must have permissions
                     on that directory. NEVER run as root!
                     Default directory is /tmp
+    -B, --baseurl   Behind a proxy pywebdav needs to generate other URIs for PROPFIND.
+                    If you are experiencing problems with links or such when behind
+                    a proxy then just set this to a sensible default (e.g. http://dav.domain.com).
+                    Make sure that you include the protocol.
     -H, --host      Host where to listen on (default: localhost)
     -P, --port      Port to bind server to  (default: 8008)
     -u, --user      Username for authentication
@@ -179,13 +187,15 @@ def run():
     configfile = ''
     mimecheck = True
     loglevel = 'warning'
+    baseurl = ''
 
     # parse commandline
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:Ml:T',
+        opts, args = getopt.getopt(sys.argv[1:], 'P:D:H:d:u:p:nvhmJi:c:Ml:TB:',
                 ['host=', 'port=', 'directory=', 'user=', 'password=',
                  'daemon=', 'noauth', 'help', 'verbose', 'mysql', 
-                 'icounter=', 'config=', 'nolock', 'nomime', 'loglevel', 'noiter'])
+                 'icounter=', 'config=', 'nolock', 'nomime', 'loglevel', 'noiter',
+                 'baseurl='])
     except getopt.GetoptError, e:
         print usage
         print '>>>> ERROR: %s' % str(e)
@@ -243,6 +253,9 @@ def run():
             daemonize = True
             daemonaction = a
 
+        if o in ['-B', '--baseurl']:
+            baseurl = a.lower()
+
     # This feature are disabled because they are unstable
     http_request_use_iterator = 0
 
@@ -292,7 +305,8 @@ def run():
                 'mimecheck' : mimecheck,
                 'chunked_http_response': chunked_http_response,
                 'http_request_use_iterator': http_request_use_iterator,
-                'http_response_use_iterator': http_response_use_iterator
+                'http_response_use_iterator': http_response_use_iterator,
+                'baseurl' : baseurl
                 }
 
         conf = setupDummyConfig(**_dc)

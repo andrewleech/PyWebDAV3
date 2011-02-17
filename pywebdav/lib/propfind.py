@@ -194,10 +194,14 @@ class PROPFIND:
         """
         re=doc.createElement("D:response")
 
+        if self._dataclass.baseurl:
+            uri = self._dataclass.baseurl + '/' + '/'.join(uri.split('/')[3:])
+
         # write href information
         uparts=urlparse.urlparse(uri)
         fileloc=uparts[2]
         href=doc.createElement("D:href")
+
         huri=doc.createTextNode(uparts[0]+'://'+'/'.join(uparts[1:2]) + urllib.quote(fileloc))
         href.appendChild(huri)
         re.appendChild(href)
@@ -238,10 +242,14 @@ class PROPFIND:
                 re.setAttribute("xmlns:ns"+str(nsnum),nsname)
             nsnum=nsnum+1
 
+        if self._dataclass.baseurl:
+            uri = self._dataclass.baseurl + '/' + '/'.join(uri.split('/')[3:])
+
         # write href information
         uparts=urlparse.urlparse(uri)
         fileloc=uparts[2]
         href=doc.createElement("D:href")
+
         huri=doc.createTextNode(uparts[0]+'://'+'/'.join(uparts[1:2]) + urllib.quote(fileloc))
         href.appendChild(huri)
         re.appendChild(href)

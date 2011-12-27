@@ -683,7 +683,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
             if d=="0":
                 res=cp.single_action()
-                self.send_status(res)
+                self.send_status(res or 201)
                 return
 
         # now it only can be "infinity" but we nevertheless check for a collection

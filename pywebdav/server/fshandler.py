@@ -389,9 +389,9 @@ class FilesystemHandler(dav_interface):
         dstfile=self.uri2local(dst)
         try:
             shutil.copy(srcfile, dstfile)
-        except OSError:
+        except (OSError, IOError):
             log.info('copy: forbidden')
-            raise DAV_Error, Forbidden
+            raise DAV_Error, 409
 
     def copycol(self, src, dst):
         """ copy a collection.

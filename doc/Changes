@@ -6,6 +6,9 @@ Restructured. Moved DAV package to pywebdav.lib. All integrators must simply rep
 ''from DAV'' imports to ''from pywebdav.lib''.
 [Simon Pamies]
 
+Fix issue 44: Incomplete PROPFIND response
+[Sascha Silbe]
+
 0.9.4 (April 15 2010)
 ---------------------
   

@@ -216,12 +216,12 @@ class PROPFIND:
             pr.setAttribute("xmlns:"+nsp,ns)
             nsnum=nsnum+1
 
-        # write propertynames
-        for p in plist:
-            pe=doc.createElement(nsp+":"+p)
-            pr.appendChild(pe)
+            # write propertynames
+            for p in plist:
+                pe=doc.createElement(nsp+":"+p)
+                pr.appendChild(pe)
 
-        ps.appendChild(pr)
+            ps.appendChild(pr)
         re.appendChild(ps)
 
         return re

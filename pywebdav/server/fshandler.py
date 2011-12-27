@@ -105,7 +105,7 @@ class FilesystemHandler(dav_interface):
         return uri
 
 
-    def get_childs(self,uri):
+    def get_childs(self, uri, filter=None):
         """ return the child objects as self.baseuris for the given URI """
 
         fileloc=self.uri2local(uri)

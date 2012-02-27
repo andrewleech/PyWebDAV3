@@ -1,16 +1,11 @@
-DEBUG=None
+"""DAV HTTP Server
 
-import os
-import sys
-import time
-import socket
-import string
-import posixpath
-import base64
+This module builds on BaseHTTPServer and implements DAV commands
+
+"""
 import AuthServer
 import urlparse
 import urllib
-import random
 import logging
 
 from propfind import PROPFIND
@@ -20,8 +15,8 @@ from davcopy import COPY
 from davmove import MOVE
 
 from utils import rfc1123_date, IfParser, tokenFinder
-from string import atoi,split
-from errors import *
+from string import atoi
+from errors import DAV_Error, DAV_NotFound
 
 from constants import DAV_VERSION_1, DAV_VERSION_2
 from locks import LockManager
@@ -34,9 +29,10 @@ from xml.parsers.expat import ExpatError
 
 log = logging.getLogger(__name__)
 
-BUFFER_SIZE = 128 * 1000 # 128 Ko
+BUFFER_SIZE = 128 * 1000  # 128 Ko
 
-class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
+
+class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
     """Simple DAV request handler with
 
     - GET
@@ -58,21 +54,22 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     """
 
     server_version = "DAV/" + VERSION
-    encode_threshold = 1400 # common MTU
+    encode_threshold = 1400  # common MTU
 
-    def send_body(self, DATA, code = None, msg = None, desc = None, ctype='application/octet-stream', headers={}):
+    def send_body(self, DATA, code=None, msg=None, desc=None,
+                  ctype='application/octet-stream', headers={}):
         """ send a body in one part """
         log.debug("Use send_body method")
 
-        self.send_response(code,message=msg)
+        self.send_response(code, message=msg)
         self.send_header("Connection", "close")
         self.send_header("Accept-Ranges", "bytes")
         self.send_header('Date', rfc1123_date())
 
         self._send_dav_version()
 
-        for a,v in headers.items():
-            self.send_header(a,v)
+        for a, v in headers.items():
+            self.send_header(a, v)
 
         if DATA:
             if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
@@ -98,53 +95,46 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         if DATA:
             if isinstance(DATA, str) or isinstance(DATA, unicode):
                 log.debug("Don't use iterator")
-                self._append(DATA)
+                self.wfile.write(DATA)
             else:
                 if self._config.DAV.getboolean('http_response_use_iterator'):
                     # Use iterator to reduce using memory
                     log.debug("Use iterator")
-                    self.wfile.write(self._buffer)
-                    self.wfile.flush()
-                    self._buffer=""
                     for buf in DATA:
                         self.wfile.write(buf)
                         self.wfile.flush()
                 else:
                     # Don't use iterator, it's a compatibility option
                     log.debug("Don't use iterator")
-                    self._append(DATA.read())
+                    self.wfile.write(DATA.read())
 
-    def send_body_chunks_if_http11(self, DATA, code, msg = None, desc = None, 
-                                   ctype='text/xml; encoding="utf-8"', 
+    def send_body_chunks_if_http11(self, DATA, code, msg=None, desc=None,
+                                   ctype='text/xml; encoding="utf-8"',
                                    headers={}):
-        if (
-            self.request_version == 'HTTP/1.0' or
-            not self._config.DAV.getboolean('chunked_http_response')
-        ):
+        if (self.request_version == 'HTTP/1.0' or
+            not self._config.DAV.getboolean('chunked_http_response')):
             self.send_body(DATA, code, msg, desc, ctype, headers)
         else:
             self.send_body_chunks(DATA, code, msg, desc, ctype, headers)
- 
-    def send_body_chunks(self, DATA, code, msg=None, desc=None, 
-                            ctype='text/xml"', headers={}):
+
+    def send_body_chunks(self, DATA, code, msg=None, desc=None,
+                         ctype='text/xml"', headers={}):
         """ send a body in chunks """
 
-        self.responses[207]=(msg,desc)
-        self.send_response(code,message=msg)
+        self.responses[207] = (msg, desc)
+        self.send_response(code, message=msg)
         self.send_header("Content-type", ctype)
         self.send_header("Transfer-Encoding", "chunked")
         self.send_header('Date', rfc1123_date())
-        
+
         self._send_dav_version()
 
-        for a,v in headers.items():
-            self.send_header(a,v)
+        for a, v in headers.items():
+            self.send_header(a, v)
 
         if DATA:
-            if (
-                ('gzip' in self.headers.get('Accept-Encoding', '').split(',')) and
-                (len(DATA) > self.encode_threshold)
-            ):
+            if ('gzip' in self.headers.get('Accept-Encoding', '').split(',')
+                and len(DATA) > self.encode_threshold):
                 buffer = StringIO.StringIO()
                 output = gzip.GzipFile(mode='wb', fileobj=buffer)
                 if isinstance(DATA, str):
@@ -167,20 +157,16 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         if DATA:
             if isinstance(DATA, str) or isinstance(DATA, unicode):
-                self._append(hex(len(DATA))[2:]+"\r\n")
-                self._append(DATA)
-                self._append("\r\n")
-                self._append("0\r\n")
-                self._append("\r\n")
+                self.wfile.write(hex(len(DATA))[2:] + "\r\n")
+                self.wfile.write(DATA)
+                self.wfile.write("\r\n")
+                self.wfile.write("0\r\n")
+                self.wfile.write("\r\n")
             else:
                 if self._config.DAV.getboolean('http_response_use_iterator'):
                     # Use iterator to reduce using memory
-                    self.wfile.write(self._BufferedHTTPRequestHandler__buffer)
-                    self.wfile.flush()
-                    self._BufferedHTTPRequestHandler__buffer=""
-
                     for buf in DATA:
-                        self.wfile.write(hex(len(buf))[2:]+"\r\n")
+                        self.wfile.write(hex(len(buf))[2:] + "\r\n")
                         self.wfile.write(buf)
                         self.wfile.write("\r\n")
 
@@ -188,16 +174,17 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                     self.wfile.write("\r\n")
                 else:
                     # Don't use iterator, it's a compatibility option
-                    self._append(hex(len(DATA))[2:]+"\r\n")
-                    self._append(DATA.read())
-                    self._append("\r\n")
-                    self._append("0\r\n")
-                    self._append("\r\n")
+                    self.wfile.write(hex(len(DATA))[2:] + "\r\n")
+                    self.wfile.write(DATA.read())
+                    self.wfile.write("\r\n")
+                    self.wfile.write("0\r\n")
+                    self.wfile.write("\r\n")
 
     def _send_dav_version(self):
-        if self._config.DAV.getboolean('lockemulation') is True:
+        if self._config.DAV.getboolean('lockemulation'):
             self.send_header('DAV', DAV_VERSION_2['version'])
-        else: self.send_header('DAV', DAV_VERSION_1['version'])
+        else:
+            self.send_header('DAV', DAV_VERSION_1['version'])
 
     ### HTTP METHODS called by the server
 
@@ -207,13 +194,14 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         self.send_response(200)
         self.send_header("Content-Length", 0)
 
-        if self._config.DAV.getboolean('lockemulation') is True:
+        if self._config.DAV.getboolean('lockemulation'):
             self.send_header('Allow', DAV_VERSION_2['options'])
-        else: self.send_header('Allow', DAV_VERSION_1['options'])
+        else:
+            self.send_header('Allow', DAV_VERSION_1['options'])
 
         self._send_dav_version()
 
-        self.send_header('MS-Author-Via', 'DAV') # this is for M$
+        self.send_header('MS-Author-Via', 'DAV')  # this is for M$
         self.end_headers()
 
     def _HEAD_GET(self, with_body=False):
@@ -227,18 +215,22 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         # get the last modified date (RFC 1123!)
         try:
-            headers['Last-Modified'] = dc.get_prop(uri,"DAV:","getlastmodified")
-        except DAV_NotFound: headers['Last-Modified'] = "Sun, 01 Dec 2038 00:00:00 GMT"
+            headers['Last-Modified'] = dc.get_prop(
+                uri, "DAV:", "getlastmodified")
+        except DAV_NotFound:
+            pass
 
         # get the ETag if any
         try:
             headers['Etag'] = dc.get_prop(uri, "DAV:", "getetag")
-        except DAV_NotFound: pass
+        except DAV_NotFound:
+            pass
 
         # get the content type
         try:
-            content_type = dc.get_prop(uri,"DAV:","getcontenttype")
-        except DAV_NotFound: content_type = "application/octet-stream"
+            content_type = dc.get_prop(uri, "DAV:", "getcontenttype")
+        except DAV_NotFound:
+            content_type = "application/octet-stream"
 
         range = None
         status_code = 200
@@ -251,7 +243,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         # get the data
         try:
             data = dc.get_data(uri, range)
-        except DAV_Error, (ec,dd):
+        except DAV_Error, (ec, dd):
             self.send_status(ec)
             return ec
 
@@ -260,11 +252,12 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             data = None
 
         if isinstance(data, str) or isinstance(data, unicode):
-            self.send_body(data, status_code, None, None, content_type, headers)
+            self.send_body(data, status_code, None, None, content_type,
+                           headers)
         else:
             headers['Keep-Alive'] = 'timeout=15, max=86'
             headers['Connection'] = 'Keep-Alive'
-            self.send_body_chunks_if_http11(data, status_code, None, None, 
+            self.send_body_chunks_if_http11(data, status_code, None, None,
                                             content_type, headers)
 
         return status_code
@@ -277,7 +270,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     def do_GET(self):
         """Serve a GET request."""
 
-        log.info(self.headers)
+        log.debug(self.headers)
 
         try:
             status_code = self._HEAD_GET(with_body=True)
@@ -290,15 +283,15 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 raise
 
     def do_TRACE(self):
-        """ This will always fail because we can not reproduce HTTP requests. 
+        """ This will always fail because we can not reproduce HTTP requests.
         We send back a 405=Method Not Allowed. """
 
-        self.send_body(None, '405', 'Method Not Allowed', 'Method Not Allowed')
+        self.send_body(None, 405, 'Method Not Allowed', 'Method Not Allowed')
 
     def do_POST(self):
         """ Replacement for GET response. Not implemented here. """
 
-        self.send_body(None, '405', 'Method Not Allowed', 'Method Not Allowed')
+        self.send_body(None, 405, 'Method Not Allowed', 'Method Not Allowed')
 
     def do_PROPPATCH(self):
         # currently unsupported
@@ -312,7 +305,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         # read the body containing the xml request
         # iff there is no body then this is an ALLPROP request
         body = None
-        if self.headers.has_key('Content-Length'):
+        if 'Content-Length' in self.headers:
             l = self.headers['Content-Length']
             body = self.rfile.read(atoi(l))
 
@@ -327,7 +320,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         try:
             DATA = '%s\n' % pf.createResponse()
-        except DAV_Error, (ec,dd):
+        except DAV_Error, (ec, dd):
             return self.send_status(ec)
 
         # work around MSIE DAV bug for creation and modified date
@@ -335,11 +328,18 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         if (self.headers.get('User-Agent') ==
             'Microsoft Data Access Internet Publishing Provider DAV 1.1'):
             DATA = DATA.replace('<ns0:getlastmodified xmlns:ns0="DAV:">',
-                                    '<ns0:getlastmodified xmlns:n="DAV:" xmlns:b="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/" b:dt="dateTime.rfc1123">')
+                                '<ns0:getlastmodified xmlns:n="DAV:" '
+                                'xmlns:b="urn:uuid:'
+                                'c2f41010-65b3-11d1-a29f-00aa00c14882/" '
+                                'b:dt="dateTime.rfc1123">')
             DATA = DATA.replace('<ns0:creationdate xmlns:ns0="DAV:">',
-                                    '<ns0:creationdate xmlns:n="DAV:" xmlns:b="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/" b:dt="dateTime.tz">')
+                                '<ns0:creationdate xmlns:n="DAV:" '
+                                'xmlns:b="urn:uuid:'
+                                'c2f41010-65b3-11d1-a29f-00aa00c14882/" '
+                                'b:dt="dateTime.tz">')
 
-        self.send_body_chunks_if_http11(DATA, '207','Multi-Status','Multiple responses')
+        self.send_body_chunks_if_http11(DATA, 207, 'Multi-Status',
+                                        'Multiple responses')
 
     def do_REPORT(self):
         """ Query properties on defined resource. """
@@ -349,7 +349,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         # read the body containing the xml request
         # iff there is no body then this is an ALLPROP request
         body = None
-        if self.headers.has_key('Content-Length'):
+        if 'Content-Length' in self.headers:
             l = self.headers['Content-Length']
             body = self.rfile.read(atoi(l))
 
@@ -360,32 +360,33 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
 
         try:
             DATA = '%s\n' % rp.createResponse()
-        except DAV_Error, (ec,dd):
+        except DAV_Error, (ec, dd):
             return self.send_status(ec)
 
-        self.send_body_chunks_if_http11(DATA, '207','Multi-Status','Multiple responses')
+        self.send_body_chunks_if_http11(DATA, 207, 'Multi-Status',
+                                        'Multiple responses')
 
     def do_MKCOL(self):
         """ create a new collection """
 
         # according to spec body must be empty
         body = None
-        if self.headers.has_key('Content-Length'):
+        if 'Content-Length' in self.headers:
             l = self.headers['Content-Length']
             body = self.rfile.read(atoi(l))
 
         if body:
             return self.send_status(415)
 
-        dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri=urllib.unquote(uri)
+        dc = self.IFACE_CLASS
+        uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
+        uri = urllib.unquote(uri)
 
         try:
             dc.mkcol(uri)
             self.send_status(201)
             self.log_request(201)
-        except DAV_Error, (ec,dd):
+        except DAV_Error, (ec, dd):
             self.log_request(ec)
             return self.send_status(ec)
 
@@ -397,15 +398,15 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         uri = urllib.unquote(uri)
 
         # hastags not allowed
-        if uri.find('#')>=0:
+        if uri.find('#') >= 0:
             return self.send_status(404)
 
         # locked resources are not allowed to delete
         if self._l_isLocked(uri):
-            return self.send_body(None, '423', 'Locked', 'Locked')
+            return self.send_body(None, 423, 'Locked', 'Locked')
 
         # Handle If-Match
-        if self.headers.has_key('If-Match'):
+        if 'If-Match' in self.headers:
             test = False
             etag = None
             try:
@@ -427,7 +428,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 return
 
         # Handle If-None-Match
-        if self.headers.has_key('If-None-Match'):
+        if 'If-None-Match' in self.headers:
             test = True
             etag = None
             try:
@@ -449,28 +450,28 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 return
 
         try:
-            dl = DELETE(uri,dc)
+            dl = DELETE(uri, dc)
             if dc.is_collection(uri):
-                res=dl.delcol()
+                res = dl.delcol()
                 if res:
-                    self.send_status(207,body=res)
+                    self.send_status(207, body=res)
                 else:
                     self.send_status(204)
             else:
-                res=dl.delone() or 204
-                self.send_status(res) 
+                res = dl.delone() or 204
+                self.send_status(res)
         except DAV_NotFound:
-            self.send_body(None, '404', 'Not Found', 'Not Found')
+            self.send_body(None, 404, 'Not Found', 'Not Found')
 
     def do_PUT(self):
-        dc=self.IFACE_CLASS
-        uri=urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri=urllib.unquote(uri)
+        dc = self.IFACE_CLASS
+        uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
+        uri = urllib.unquote(uri)
 
         log.debug("do_PUT: uri = %s" % uri)
         log.debug('do_PUT: headers = %s' % self.headers)
         # Handle If-Match
-        if self.headers.has_key('If-Match'):
+        if 'If-Match' in self.headers:
             log.debug("do_PUT: If-Match %s" % self.headers['If-Match'])
             test = False
             etag = None
@@ -496,8 +497,9 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 return
 
         # Handle If-None-Match
-        if self.headers.has_key('If-None-Match'):
-            log.debug("do_PUT: If-None-Match %s" % self.headers['If-None-Match'])
+        if 'If-None-Match' in self.headers:
+            log.debug("do_PUT: If-None-Match %s" %
+                      self.headers['If-None-Match'])
 
             test = True
             etag = None
@@ -528,7 +530,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             (self._l_isLocked(uri)) and
             (not ifheader)
         ):
-            return self.send_body(None, '423', 'Locked', 'Locked')
+            return self.send_body(None, 423, 'Locked', 'Locked')
 
         if ((self._l_isLocked(uri)) and (ifheader)):
             uri_token = self._l_getLockForUri(uri)
@@ -547,7 +549,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 if found:
                     break
             if not found:
-                res = self.send_body(None, '423', 'Locked', 'Locked')
+                res = self.send_body(None, 423, 'Locked', 'Locked')
                 self.log_request(423)
                 return res
 
@@ -557,10 +559,9 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
                 self.protocol_version >= 'HTTP/1.1' and
                 self.request_version >= 'HTTP/1.1'):
             self.send_status(100)
-            self._flush()
 
         content_type = None
-        if self.headers.has_key("Content-Type"):
+        if 'Content-Type' in self.headers:
             content_type = self.headers['Content-Type']
 
         headers = {}
@@ -578,26 +579,25 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
             self.protocol_version >= 'HTTP/1.1' and
             self.request_version >= 'HTTP/1.1'
         ):
-            self.send_body(None, '201', 'Created', '', headers=headers)
-            self._flush()
+            self.send_body(None, 201, 'Created', '', headers=headers)
 
             dc.put(uri, self._readChunkedData(), content_type)
         else:
             # read the body
-            body=None
-            if self.headers.has_key("Content-Length"):
-                l=self.headers['Content-Length']
+            body = None
+            if 'Content-Length' in self.headers:
+                l = self.headers['Content-Length']
                 log.debug("do_PUT: Content-Length = %s" % l)
-                body=self._readNoChunkedData(atoi(l))
+                body = self._readNoChunkedData(atoi(l))
             else:
                 log.debug("do_PUT: Content-Length = empty")
 
             try:
                 dc.put(uri, body, content_type)
-            except DAV_Error, (ec,dd):
+            except DAV_Error, (ec, dd):
                 return self.send_status(ec)
 
-            self.send_body(None, '201', 'Created', '', headers=headers)
+            self.send_body(None, 201, 'Created', '', headers=headers)
             self.log_request(201)
 
     def _readChunkedData(self):
@@ -615,7 +615,7 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
         else:
             # Don't use iterator, it's a compatibility option
             return self.__readNoChunkedDataWithoutIterator(content_length)
-        
+
     def __readNoChunkedDataWithIterator(self, content_length):
         while True:
             if content_length > BUFFER_SIZE:
@@ -630,105 +630,100 @@ class DAVRequestHandler(AuthServer.BufferedAuthRequestHandler, LockManager):
     def __readNoChunkedDataWithoutIterator(self, content_length):
         return self.rfile.read(content_length)
 
-
     def do_COPY(self):
         """ copy one resource to another """
         try:
             self.copymove(COPY)
-        except DAV_Error, (ec,dd):
+        except DAV_Error, (ec, dd):
             return self.send_status(ec)
 
     def do_MOVE(self):
         """ move one resource to another """
         try:
             self.copymove(MOVE)
-        except DAV_Error, (ec,dd):
+        except DAV_Error, (ec, dd):
             return self.send_status(ec)
 
-    def copymove(self,CLASS):
+    def copymove(self, CLASS):
         """ common method for copying or moving objects """
-        dc=self.IFACE_CLASS
+        dc = self.IFACE_CLASS
 
         # get the source URI
-        source_uri=urlparse.urljoin(self.get_baseuri(dc),self.path)
-        source_uri=urllib.unquote(source_uri)
+        source_uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
+        source_uri = urllib.unquote(source_uri)
 
         # get the destination URI
-        dest_uri=self.headers['Destination']
-        dest_uri=urllib.unquote(dest_uri)
+        dest_uri = self.headers['Destination']
+        dest_uri = urllib.unquote(dest_uri)
 
         # check locks on source and dest
         if self._l_isLocked(source_uri) or self._l_isLocked(dest_uri):
-            return self.send_body(None, '423', 'Locked', 'Locked')
+            return self.send_body(None, 423, 'Locked', 'Locked')
 
         # Overwrite?
-        overwrite=1
-        result_code=204
-        if self.headers.has_key("Overwrite"):
-            if self.headers['Overwrite']=="F":
-                overwrite=None
-                result_code=201
+        overwrite = 1
+        result_code = 204
+        if 'Overwrite' in self.headers:
+            if self.headers['Overwrite'] == "F":
+                overwrite = None
+                result_code = 201
 
         # instanciate ACTION class
-        cp=CLASS(dc,source_uri,dest_uri,overwrite)
+        cp = CLASS(dc, source_uri, dest_uri, overwrite)
 
         # Depth?
-        d="infinity"
-        if self.headers.has_key("Depth"):
-            d=self.headers['Depth']
+        d = "infinity"
+        if 'Depth' in self.headers:
+            d = self.headers['Depth']
 
-            if d!="0" and d!="infinity":
+            if d != "0" and d != "infinity":
                 self.send_status(400)
                 return
 
-            if d=="0":
-                res=cp.single_action()
+            if d == "0":
+                res = cp.single_action()
                 self.send_status(res or 201)
                 return
 
-        # now it only can be "infinity" but we nevertheless check for a collection
+        # now it only can be "infinity" but we nevertheless check for a
+        # collection
         if dc.is_collection(source_uri):
             try:
-                res=cp.tree_action()
-            except DAV_Error, (ec,dd):
+                res = cp.tree_action()
+            except DAV_Error, (ec, dd):
                 self.send_status(ec)
                 return
         else:
             try:
-                res=cp.single_action()
-            except DAV_Error, (ec,dd):
+                res = cp.single_action()
+            except DAV_Error, (ec, dd):
                 self.send_status(ec)
                 return
 
         if res:
-            self.send_body_chunks_if_http11(res,207,self.responses[207][0],
-                            self.responses[207][1],
-                            ctype='text/xml; charset="utf-8"')
+            self.send_body_chunks_if_http11(res, 207, self.responses[207][0],
+                                            self.responses[207][1],
+                                            ctype='text/xml; charset="utf-8"')
         else:
             self.send_status(result_code)
 
-    def get_userinfo(self,user,pw):
+    def get_userinfo(self, user, pw):
         """ Dummy method which lets all users in """
-
         return 1
 
-    def send_status(self,code=200,mediatype='text/xml;  charset="utf-8"', \
-                                msg=None,body=None):
+    def send_status(self, code=200, mediatype='text/xml;  charset="utf-8"',
+                    msg=None, body=None):
 
         if not msg:
-            msg=self.responses.get(code, ['', ''])[1]
+            msg = self.responses.get(code, ['', ''])[1]
 
-        self.send_body(body,code,self.responses.get(code, [''])[0],msg,mediatype)
+        self.send_body(body, code, self.responses.get(code, [''])[0], msg,
+                       mediatype)
 
     def get_baseuri(self, dc):
         baseuri = dc.baseuri
-        if self.headers.has_key('Host'):
+        if 'Host' in self.headers:
             uparts = list(urlparse.urlparse(dc.baseuri))
             uparts[1] = self.headers['Host']
             baseuri = urlparse.urlunparse(uparts)
         return baseuri
-
-    def log_message(self, *args):
-        AuthServer.BufferedAuthRequestHandler.log_message(self, 
-            *tuple(('- %s - ' + args[0],) + (self.headers.get('User-Agent', '?'),) + args[1:])
-        )

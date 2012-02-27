@@ -79,8 +79,8 @@ OPTIONAL
 --------
 
 - MySQLdb (http://sourceforge.net/projects/mysql-python)
-	- Mysql server 4.0+ for Mysql authentication with
-	  with read/write access to one database
+- Mysql server 4.0+ for Mysql authentication with
+  with read/write access to one database
 
 
 NOTES

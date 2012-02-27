@@ -15,7 +15,7 @@ and change it. You actually have implement the following methods:
 
 
 
-get_childs(self,uri)
+get_childs(self, uri, filter=None)
 
     This method should return a list of all childs for the
     object specified by the given uri.
@@ -29,10 +29,10 @@ get_props(self,uri,values=None,all=None,proplist=[])
     about properties for the object specified with the given uri.
     The parameters are as follows:
 
-    values	-- ?? cannot remember ;-)
-    all		-- if set to 1 return all properties
-    proplist	-- alternatively you can give get a list of
-		   properties to return 
+    values      -- ?? cannot remember ;-)
+    all         -- if set to 1 return all properties
+    proplist    -- alternatively you can give get a list of
+                   properties to return
 
     The result of this method should be a dictionary of the form
 
@@ -50,7 +50,7 @@ get_data(self,uri)
 
 
 get_dav(self,uri,propname)
-    
+
     This method will be called when the server needs access to a DAV
     property. In the example implementation it will simply delegate it
     to the corresponding _get_dav_<propname> method. You maybe should
@@ -58,7 +58,7 @@ get_dav(self,uri,propname)
 
 
 _get_dav_<propname>(uri)
-    
+
     These methods will be called by get_dav() when the value of a DAV
     property is needed. The defined properties are:
 
@@ -100,7 +100,7 @@ rmcol(self,uri)
 
 
 rm(self,uri)
-    
+
     This is the same for single objects, the same as above applies.
 
 

@@ -1,219 +1,102 @@
-"""
-    Authenticating HTTP Server
+"""Authenticating HTTP Server
 
-    This module builds on BaseHTTPServer and implements
-    basic authentication
+This module builds on BaseHTTPServer and implements basic authentication
 
 """
 
-import os
-import sys
-import time
-import socket
-import string
-import posixpath
-import SocketServer
-import BufferingHTTPServer
-import BaseHTTPServer
 import base64
+import binascii
+import BaseHTTPServer
 
-from string import atoi,split
 
-from pywebdav.lib import VERSION, AUTHOR
-
-AUTH_ERROR_MSG="""<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-<HTML><HEAD>
-<TITLE>401 Authorization Required</TITLE>
-</HEAD><BODY>
-<H1>Authorization Required</H1>
-This server could not verify that you
+DEFAULT_AUTH_ERROR_MESSAGE = """
+<head>
+<title>%(code)s - %(message)s</title>
+</head>
+<body>
+<h1>Authorization Required</h1>
+this server could not verify that you
 are authorized to access the document
 requested.  Either you supplied the wrong
 credentials (e.g., bad password), or your
 browser doesn't understand how to supply
-the credentials required.<P>
-</BODY></HTML>"""
+the credentials required.
+</body>"""
 
-class AuthRequestHandler:
+
+def _quote_html(html):
+    return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+class AuthRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     """
-    Simple handler that use buffering and can check for auth headers 
+    Simple handler that can check for auth headers
 
-    In order to use it create a subclass of BufferedAuthRequestHandler
-    or BasicAuthRequestHandler depending on if you want to send
-    responses as block or as stream.
-
-    In your subclass you have to define the method get_userinfo(user,pw)
+    In your subclass you have to define the method get_userinfo(user, password)
     which should return 1 or None depending on whether the password was
     ok or not. None means that the user is not authorized.
     """
 
     # False means no authentiation
-    DO_AUTH=1
+    DO_AUTH = 1
 
-    AUTH_ERROR_MSG="""<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-    <HTML><HEAD>
-    <TITLE>401 Authorization Required</TITLE>
-    </HEAD><BODY>
-    <H1>Authorization Required</H1>
-    This server could not verify that you
-    are authorized to access the document
-    requested.  Either you supplied the wrong
-    credentials (e.g., bad password), or your
-    browser doesn't understand how to supply
-    the credentials required.<P>
-    </BODY></HTML>"""
+    def parse_request(self):
+        if not BaseHTTPServer.BaseHTTPRequestHandler.parse_request(self):
+            return False
 
-    server_version = "AuthHTTP/" + VERSION
-
-    def _log(self, message):
-        pass
-
-    def handle(self):
-        """
-        Special handle method with buffering and authentication
-        """
-
-        self.raw_requestline = self.rfile.readline()
-        self.request_version = version = "HTTP/0.9" # Default
-        requestline = self.raw_requestline
-
-        # needed by send_error
-        self.command = requestline
-        self.headers = {}
-
-        if requestline[-2:] == '\r\n':
-            requestline = requestline[:-2]
-        elif requestline[-1:] == '\n':
-            requestline = requestline[:-1]
-
-        self.requestline = requestline
-        words = string.split(requestline)
-        if len(words) == 3:
-            [command, path, version] = words
-            if version[:5] != 'HTTP/':
-                self.send_error(400, "Bad request version (%s)" % `version`)
-                return
-        elif len(words) == 2:
-            [command, path] = words
-            if command != 'GET':
-                self.send_error(400,
-                                "Bad HTTP/0.9 request type (%s)" % `command`)
-                return
-        else:
-            self.send_error(400, "Bad request syntax (%s)" % `requestline`)
-            return
-
-        self.command, self.path, self.request_version = command, path, version
-        self.headers = self.MessageClass(self.rfile, 0)
-
-        # test authentification
         if self.DO_AUTH:
-            try:
-                a=self.headers["Authorization"]
-                m,up=string.split(a)
-                up2=base64.decodestring(up)
-                user,pw=string.split(up2,":")
+            authorization = self.headers.get('Authorization', '')
+            if not authorization:
+                self.send_autherror(401, "Authorization Required")
+                return False
+            scheme, credentials = authorization.split()
+            if scheme != 'Basic':
+                self.send_error(501)
+                return False
+            credentials = base64.decodestring(credentials)
+            user, password = credentials.split(':', 2)
+            if not self.get_userinfo(user, password, self.command):
+                self.send_autherror(401, "Authorization Required")
+                return False
+        return True
 
-                # Check if the given user can access
-                if not self.get_userinfo(user,pw,command):
-                    self.send_autherror(401,"Authorization Required"); return
-            except:
-                self.send_autherror(401,"Authorization Required")
-                return
+    def send_autherror(self, code, message=None):
+        """Send and log an auth error reply.
 
-        # check for methods starting with do_
-        mname = 'do_' + command
-        if not hasattr(self, mname):
-            self.send_error(501, "Unsupported method (%s)" % `command`)
-            return
+        Arguments are the error code, and a detailed message.
+        The detailed message defaults to the short entry matching the
+        response code.
 
-        method = getattr(self, mname)
-        method()
-
-        self._flush()
-
-    def send_response(self,code, message=None):
-        """Override send_response to use the correct http version
-           in the response."""
-
-        if message is None:
-            if self.responses.has_key(code):
-                message = self.responses[code][0]
-            else:
-                message = ''
-
-        if self.request_version != 'HTTP/0.9':
-            self._append("%s %s %s\r\n" %
-                             (self.request_version, str(code), message))
-
-        self.send_header('Server', self.version_string())
-        self.send_header('Date', self.date_time_string())
-        self.send_header('Connection', 'close')
-
-    def send_head(self):
-        """Common code for GET and HEAD commands.
-
-        This sends the response code and MIME headers.
-
-        Return value is either a file object (which has to be copied
-        to the outputfile by the caller unless the command was HEAD,
-        and must be closed by the caller under all circumstances), or
-        None, in which case the caller has nothing further to do.
+        This sends an error response (so it must be called before any
+        output has been generated), logs the error, and finally sends
+        a piece of HTML explaining the error to the user.
 
         """
-        path = self.translate_path(self.path)
-        if os.path.isdir(path):
-            self.send_error(403, "Directory listing not supported")
-            return None
-        try:
-            f = open(path, 'rb')
-        except IOError:
-            self.send_error(404, "File not found")
-            return None
-
-        self.send_response(200)
-        self.send_header("Content-type", self.guess_type(path))
-        self.end_headers()
-        return f
-
-    def send_autherror(self,code,message=None):
         try:
             short, long = self.responses[code]
         except KeyError:
             short, long = '???', '???'
-        if not message:
+        if message is None:
             message = short
         explain = long
-
-        emsg=self.AUTH_ERROR_MSG
         self.log_error("code %d, message %s", code, message)
+
+        # using _quote_html to prevent Cross Site Scripting attacks (see bug
+        # #1100201)
+        content = (self.error_auth_message_format % {'code': code, 'message':
+                   _quote_html(message), 'explain': explain})
         self.send_response(code, message)
-        self.send_header("WWW-Authenticate","Basic realm=\"PyWebDAV\"")
-        self.send_header("Content-Type", 'text/html')
+        self.send_header('Content-Type', self.error_content_type)
+        self.send_header('WWW-Authenticate', 'Basic realm="PyWebDAV"')
+        self.send_header('Connection', 'close')
         self.end_headers()
+        self.wfile.write(content)
 
-        lines=split(emsg,"\n")
-        for l in lines:
-            self._append("%s\r\n" %l)
+    error_auth_message_format = DEFAULT_AUTH_ERROR_MESSAGE
 
-    def get_userinfo(self,user, password, command):
+    def get_userinfo(self, user, password, command):
         """Checks if the given user and the given
         password are allowed to access.
         """
-
         # Always reject
         return None
-
-class BufferedAuthRequestHandler(BufferingHTTPServer.BufferedHTTPRequestHandler,AuthRequestHandler):
-
-    def handle(self):
-        self._init_buffer()
-        AuthRequestHandler.handle(self)
-        self._flush()
-
-class BasicAuthRequestHandler(BufferingHTTPServer.BufferedHTTPRequestHandler,AuthRequestHandler):
-
-    def _append(self,s):
-        """ write the string to wfile """
-        self.wfile.write(s)
-

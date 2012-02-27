@@ -2,10 +2,10 @@ GENERAL
 -------
 
 - web page needs to get done:
-	- Download
-	- News
-	- TODO list
-	- Changes
+    - Download
+    - News
+    - TODO list
+    - Changes
     - Name
 
 - use a better solution than DAV/INI_Parse.py [Stephane Klein]

@@ -1,10 +1,13 @@
 
-0.9.8 (Feb 2011)
-----------------
+0.9.8
+-----
 
 Restructured. Moved DAV package to pywebdav.lib. All integrators must simply replace
 ''from DAV'' imports to ''from pywebdav.lib''.
 [Simon Pamies]
+
+Remove BufferingHTTPServer, reuse the header parser of BaseHTTPServer.
+[Cédric Krier]
 
 Fix issue 44: Incomplete PROPFIND response
 [Sascha Silbe]

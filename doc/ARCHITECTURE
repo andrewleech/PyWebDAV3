@@ -4,28 +4,18 @@ OVERVIEW
 
 Here is a little overview of the package:
 
-A. In the DAV/ package:
+A. In the pywebdav/lib/ package:
 
-    1. BufferingHTTPServer
-       
-       This is the same as the normal BasicHTTPServer but instead of
-       directly sending each string over the network this implementation
-       caches it and sends it at once after finishing one request.
-
-       This has the advantage that clients like cadaver don't break as
-       they want to peek at the next lines when encountering e.g. a header.
-
-    2. AuthHTTPServer
-       
+    1. AuthHTTPServer
        This works on top of either the BasicHTTPServer or the 
        BufferingHTTPServer and implements basic authentication.
 
-    3. WebDAVServer
+    2. WebDAVServer
        This server uses AuthHTTPServer for the base functionality. It also uses
        a dav interface class for interfacing with the actual data storage (e.g.
        a filesystem or a database).
 
-B. In the PyDAVServer directory:
+B. In the pywebdav/server/ directory:
 
     1. server.py
        Main file for server. Serves as a start point for the WebDAV server
@@ -47,51 +37,13 @@ B. In the PyDAVServer directory:
        PyWebDav configuration file.
 
 
-Class Tree
-----------
-
-PyWebDAVServer.fileauth.DAVAuthHandler
-<Very simple handler for authentication. Must have its data
-injected (look at server.py). Overwrites get_userinfo from AuthRequestHandler>
-
-            |
-            |
-            |
-            
-DAV.WebDAVServer.DAVRequestHandler
-<Provides methods for DAV commands. These methods are triggered
-by AuthRequestHandler.handle().>
-
-            |
-            |
-            |
-
-DAV.AuthServer.BufferedAuthRequestHandler
-<Calls the right methods to buffer request data>
-
-        |                      |
-        |                      |
-        |                      |
-
-DAV.BufferingHTTPServer     DAV.AuthServer.AuthRequestHandler
-<Saves the complete result  <Overwrites handle() method in order
-in one file and returns     to provide authentication and to pass
-only if request is          control to the do_ methods handling
-complete>                   DAV commands>
-
-
 Information
 ----------
 
 This document describes the architecture of the python davserver.
 
-The main programm is stored in DAV/WebDAVServer.py. It exports a class WebDAVServer
-which is subclassed from AuthServer which again is subclassed from 
-BufferingHTTPServer.
-
-The BufferingHTTPServer class extends the BaseHTTPServer class by
-storing all output in a buffer and sending it at once when the request
-is finished. Otherwise clients like cadaver might break.
+The main programm is stored in pywebdav/lib/WebDAVServer.py. It exports a class
+WebDAVServer which is subclassed from AuthServer.
 
 The AuthServer class implements Basic Authentication in order to make
 connections somewhat more secure.
@@ -99,7 +51,7 @@ connections somewhat more secure.
 For processing requests the WebDAVServer class needs some connection to
 the actual data on server. In contrast to a normal web server this
 data must not simply be stored on a filesystem but can also live in
-databases and the like.  
+databases and the like.
 
 Thus the WebDAVServer class needs an interface
 to this data which is implemented via an interface class (in our
@@ -124,10 +76,9 @@ following:
   You might use the existing class as skeleton and explanation of which 
   methods are needed.
 
-That should be basically all you need to do. Have a look at PyDAVServer/fileauth.py in order
-to get an example how to subclass WebDAVServer.
+That should be basically all you need to do. Have a look at
+pywebdav/server/fileauth.py in order to get an example how to subclass
+WebDAVServer.
 
 ===
 * describe the methods which need to be implemented.
-
-

@@ -1,6 +1,6 @@
 
-0.9.8
------
+0.9.8 (March 25 2011)
+---------------------
 
 Restructured. Moved DAV package to pywebdav.lib. All integrators must simply replace
 ''from DAV'' imports to ''from pywebdav.lib''.

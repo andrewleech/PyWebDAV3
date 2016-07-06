@@ -1,0 +1,45 @@
+GENERAL
+-------
+
+- web page needs to get done:
+    - Download
+    - News
+    - TODO list
+    - Changes
+    - Name
+
+- use a better solution than DAV/INI_Parse.py [Stephane Klein]
+- create WSGI server version [Stephane Klein]
+
+MOVE
+----
+
+needs to get implemented (will get used for renaming files and dirs)
+
+
+PROPFIND
+--------
+
+- PROPNAMES need to get implemented
+- only DAV properties are possible right now
+- Depth=infinity should be implemented
+
+
+GET
+---
+
+- guessing mimetype?
+
+
+PROPPATCH
+---------
+
+to be done (not that important as only DAV props are supported right now which
+you cannot change)
+
+
+TEST
+----
+
+- create some unit test
+- maybe use davclient package to make the tests

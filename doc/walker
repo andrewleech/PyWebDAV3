@@ -1,0 +1,50 @@
+Walker methods
+--------------
+
+In the COPY, DELETE and MOVE methods we need to walk over
+a tree of resources and collections in order to copy, delete
+or move them.
+
+The difference between all these walks is only that we perform
+a different action on the resources we visit. Thus it might be
+the simplest solution to provide a walker class or method to
+do that work and give it a function to perform before starting.
+
+
+Way of walking
+--------------
+
+When we delete things we should do it bottom up but when we copy
+or move things we should create resources top down. Thus we actually
+need 2 methods.
+
+But the following method might work: We create a list of all the nodes
+in the tree in tree order (means top down, left to right). When
+we walk over this list from begin to end we can copy and when we
+move backwards we can delete.
+
+Thus we need an indicator for the direction and the method to
+perform on it.
+
+
+Here the iterative approach (in order to save memory):
+dc = dataclass
+queue = list = [start_uri]
+while len(queue):
+    element = queue[-1]
+    childs = dc.get_childs(element)
+    if childs:
+        list = list + childs
+    # update queue
+    del queue[-1]
+    if childs:
+        queue = queue + childs
+
+
+(first try..)
+
+
+
+
+
+

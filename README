@@ -1,0 +1,92 @@
+PyWebDAV is a standards compliant WebDAV server and library written in Python
+
+
+DESCRIPTION
+-----------
+
+Python WebDAV implementation (level 1 and 2) that features a library that enables you
+to integrate WebDAV server capabilities to your application
+
+A fully working example on how to use the library is included. You can find the server in the DAVServer package. Upon installation a script called davserver is created in your $PYTHON/bin directory.
+
+If you search an easy to use WebDAV server that supports most clients (cadaver, Mac OS X Finder, Windows Explorer, ...) then try out PyWebDAV.
+
+
+INSTALLATION
+------------
+
+Installation and setup of server can be as easy as follows:
+
+$ easy_install PyWebDAV 
+$ davserver -D /tmp -n -J
+
+If you're living on the bleeding edge then check out the sourcecode from
+http://code.google.com/p/pywebdav/source/checkout
+
+After having downloaded code simply install a development egg:
+
+$ svn co svn checkout http://pywebdav.googlecode.com/svn/trunk/ pywebdav
+$ cd pywebdav
+$ python setup.py develop
+$ davserver --help
+
+Send patches to http://code.google.com/p/pywebdav/issues/list
+
+If you want to use the library then have a look at the DAVServer package that
+holds all code for a full blown server. Also doc/ARCHITECURE has information for you.
+
+
+QUESTIONS?
+---------
+
+Ask here http://groups.google.com/group/pywebdav
+or send an email to the maintainer.
+
+
+REQUIREMENTS
+------------
+
+- Python 2.4  or higher (www.python.org)
+- PyXML 0.66 (pyxml.sourceforge.net)
+
+
+LICENSE
+-------
+
+General Public License v2
+see doc/LICENSE
+
+
+AUTHOR(s)
+------
+
+Simon Pamies [*]
+Bielefeld, Germany
+s.pamies@banality.de
+
+Christian Scholz
+Aachen, Germany
+mrtopf@webdav.de
+
+Vince Spicer
+Ontario, Canada
+vince@vince.ca
+
+[*]: Current Maintainer
+
+
+OPTIONAL
+--------
+
+- MySQLdb (http://sourceforge.net/projects/mysql-python)
+- Mysql server 4.0+ for Mysql authentication with
+  with read/write access to one database
+
+
+NOTES
+-----
+
+Look inside the file doc/TODO for things which needs to be done and will be done 
+in the near future. 
+
+Have a look at doc/ARCHITECTURE to understand what's going on under the hood

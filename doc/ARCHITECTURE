@@ -1,0 +1,84 @@
+
+OVERVIEW
+--------
+
+Here is a little overview of the package:
+
+A. In the pywebdav/lib/ package:
+
+    1. AuthHTTPServer
+       This works on top of either the BasicHTTPServer or the 
+       BufferingHTTPServer and implements basic authentication.
+
+    2. WebDAVServer
+       This server uses AuthHTTPServer for the base functionality. It also uses
+       a dav interface class for interfacing with the actual data storage (e.g.
+       a filesystem or a database).
+
+B. In the pywebdav/server/ directory:
+
+    1. server.py
+       Main file for server. Serves as a start point for the WebDAV server
+
+    2. fshandler.py
+       Backend for the DAV server. Makes him serving content from the filesystem.
+       Have a deeper look at it if you want to implement backends to other data sources
+
+    3. fileauth.py
+       Handler for authentication. Nothing very special about it.
+
+    4. dbconn.py
+       Mysql Database Handler.
+
+    5. INI_Parse.py
+       Parses the config.ini file.
+
+    6. config.ini
+       PyWebDav configuration file.
+
+
+Information
+----------
+
+This document describes the architecture of the python davserver.
+
+The main programm is stored in pywebdav/lib/WebDAVServer.py. It exports a class
+WebDAVServer which is subclassed from AuthServer.
+
+The AuthServer class implements Basic Authentication in order to make
+connections somewhat more secure.
+
+For processing requests the WebDAVServer class needs some connection to
+the actual data on server. In contrast to a normal web server this
+data must not simply be stored on a filesystem but can also live in
+databases and the like.
+
+Thus the WebDAVServer class needs an interface
+to this data which is implemented via an interface class (in our
+example stored in fshandler.py). This class will be instantiated by the
+WebDAVServer class and be used when needed (e.g. retrieving properties,
+creating new resources, obtaining existing resources etc.).
+
+When it comes to parsing XML (like in the PROPFIND and PROPPATCH
+methods) the WebDAVServer class uses for each method another extra class
+stored e.g. in propfind.py.  This class parses the XML body and
+createsan XML response while obtaining data from the interface
+class. Thus all the XML parsing is factored out into the specific
+method classes.
+
+In order to create your own davserver for your own purposes you have to do the
+following:
+
+- subclass the WebDAVServer class and write your own get_userinfo() method for 
+  identifying users.
+
+- create your own interface class for interfacing with your actual data. 
+  You might use the existing class as skeleton and explanation of which 
+  methods are needed.
+
+That should be basically all you need to do. Have a look at
+pywebdav/server/fileauth.py in order to get an example how to subclass
+WebDAVServer.
+
+===
+* describe the methods which need to be implemented.

@@ -1,0 +1,133 @@
+How to write an interface class
+-------------------------------
+
+(this information might be a little out of date. See data.py for more
+details).
+
+The interface class of davserver is the interface between the actual data
+and the davserver. The davserver will ask this class every time it needs
+information about the underlying data (e.g. a filesystem or a database).
+
+So how do you write such a class?
+
+Simply take the existing class which models a normal unix filesystem
+and change it. You actually have implement the following methods:
+
+
+
+get_childs(self, uri, filter=None)
+
+    This method should return a list of all childs for the
+    object specified by the given uri.
+
+    The childs should be specified as normal URIs.
+
+
+get_props(self,uri,values=None,all=None,proplist=[])
+
+    This method will be called when the davserver needs information
+    about properties for the object specified with the given uri.
+    The parameters are as follows:
+
+    values      -- ?? cannot remember ;-)
+    all         -- if set to 1 return all properties
+    proplist    -- alternatively you can give get a list of
+                   properties to return
+
+    The result of this method should be a dictionary of the form
+
+    props[propname]=propvalue
+
+    Note that in the example class this one is simply a dummy class
+    as only DAV properties are handled which have their own methods
+    (see below).
+
+
+get_data(self,uri)
+
+    This method will be called when the content of an object is needed.
+    Thus this method should return a data string.
+
+
+get_dav(self,uri,propname)
+
+    This method will be called when the server needs access to a DAV
+    property. In the example implementation it will simply delegate it
+    to the corresponding _get_dav_<propname> method. You maybe should
+    handle it the same way.
+
+
+_get_dav_<propname>(uri)
+
+    These methods will be called by get_dav() when the value of a DAV
+    property is needed. The defined properties are:
+
+    - resourcetype (empty or <collection> if the object is a collection)
+    - getcontentlength 
+    - getcontenttype
+    - getlastmodified
+    - creationdate
+
+
+
+put(self,uri,data)
+
+    This method will write data into the given object.
+    It should return the result code (e.g. 424 if an error occured and
+    None if everythin was ok).
+
+
+mkcol(self,uri)
+
+    This method will be called when the MKCOL WEBDAV method was received
+    by the server. The interface class has to test
+    - if the parents of the uri all exists. If not, return 409
+    - if the object already exists. If so, return 405
+    - if it is allowed to create the collection. If not, return 403
+    If everything is ok, then create the new collection (aka directory)
+    and return 201. 
+
+
+rmcol(self,uri)
+
+    This method is called when a collection needs to be removed.
+    Only the collection should be removed, no children as the davserver
+    is automatically iterating over all children and calling rm/rmcol
+    for each of them (because it needs a result code for every deleted
+    object).
+    If the user is not allowed to delete the collection then an
+    403 should be returned
+
+
+rm(self,uri)
+
+    This is the same for single objects, the same as above applies.
+
+
+is_collection(self,uri)
+
+    This one simply returns 1 if the object specified by the uri
+    is an object or 0 if it isn't.
+
+
+
+So these are basically the methods which need to get implemented. While writing
+this I also noticed some problems:
+
+- the actual user is not know to the interface class. This should be changed as
+  it might be important when testing if an action is allowed or not. Also some
+  implementations might need a user in order to decide what to return (e.g.
+  GROUP.lounge will need this.)
+
+- the return of result codes is not standardized throughout the interface class.
+  This should be changed.
+
+- The should be a super interface class to derive from in order to handle some
+  common things like get_dav() or property handling in general. Some things
+  then also might me moved from propfind.py/devserver.py into this class.
+
+
+
+As the changes above might break existing code you have been warned with this
+message :)
+

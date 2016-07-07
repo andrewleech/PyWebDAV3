@@ -1,5 +1,5 @@
 PyWebDAV is a standards compliant WebDAV server and library written in Python
-
+This alternate package has been updated for python 3 support. It should still work with 2.7
 
 DESCRIPTION
 -----------
@@ -17,20 +17,20 @@ INSTALLATION
 
 Installation and setup of server can be as easy as follows:
 
-$ easy_install PyWebDAV 
+$ pip install PyWebDAV3
 $ davserver -D /tmp -n -J
 
 If you're living on the bleeding edge then check out the sourcecode from
-http://code.google.com/p/pywebdav/source/checkout
+https://github.com/andrewleech/PyWebDAV3
 
 After having downloaded code simply install a development egg:
 
-$ svn co svn checkout http://pywebdav.googlecode.com/svn/trunk/ pywebdav
-$ cd pywebdav
+$ git clone https://github.com/andrewleech/PyWebDAV3
+$ cd PyWebDAV3
 $ python setup.py develop
 $ davserver --help
 
-Send patches to http://code.google.com/p/pywebdav/issues/list
+Any updates, fork and pull requests against my github page
 
 If you want to use the library then have a look at the DAVServer package that
 holds all code for a full blown server. Also doc/ARCHITECURE has information for you.
@@ -39,14 +39,14 @@ holds all code for a full blown server. Also doc/ARCHITECURE has information for
 QUESTIONS?
 ---------
 
-Ask here http://groups.google.com/group/pywebdav
+Ask here https://github.com/andrewleech/PyWebDAV3
 or send an email to the maintainer.
 
 
 REQUIREMENTS
 ------------
 
-- Python 2.4  or higher (www.python.org)
+- Python 2.7  or higher (www.python.org)
 - PyXML 0.66 (pyxml.sourceforge.net)
 
 
@@ -60,7 +60,11 @@ see doc/LICENSE
 AUTHOR(s)
 ------
 
-Simon Pamies [*]
+Andrew Leech [*]
+Melbourne, Australia
+andrew@alelec.net
+
+Simon Pamies
 Bielefeld, Germany
 s.pamies@banality.de
 
@@ -86,7 +90,7 @@ OPTIONAL
 NOTES
 -----
 
-Look inside the file doc/TODO for things which needs to be done and will be done 
+Look inside the file doc/TODO for things which needs to be done and may be done
 in the near future. 
 
 Have a look at doc/ARCHITECTURE to understand what's going on under the hood

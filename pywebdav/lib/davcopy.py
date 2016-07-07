@@ -1,16 +1,17 @@
+from __future__ import absolute_import
 import xml.dom.minidom
 domimpl = xml.dom.minidom.getDOMImplementation()
 
 import sys
 import string
-import urlparse
-import urllib
-from StringIO import StringIO
+from six.moves import urllib
+import urllib.parse
+from io import StringIO
 
-import utils
-from constants import COLLECTION, OBJECT, DAV_PROPS, RT_ALLPROP, RT_PROPNAME, RT_PROP
-from errors import *
-from utils import create_treelist, quote_uri, gen_estring
+from . import utils
+from .constants import COLLECTION, OBJECT, DAV_PROPS, RT_ALLPROP, RT_PROPNAME, RT_PROP
+from .errors import *
+from .utils import create_treelist, quote_uri, gen_estring
 
 class COPY:
     """ copy resources and eventually create multistatus responses
@@ -43,12 +44,12 @@ class COPY:
 
         ### some basic tests
         # test if dest exists and overwrite is false
-        if dc.exists(self.__dst) and not self.__overwrite: raise DAV_Error, 412
+        if dc.exists(self.__dst) and not self.__overwrite: raise DAV_Error(412)
         # test if src and dst are the same
         # (we assume that both uris are on the same server!)
-        ps=urlparse.urlparse(self.__src)[2]
-        pd=urlparse.urlparse(self.__dst)[2]
-        if ps==pd: raise DAV_Error, 403
+        ps=urllib.parse.urlparse(self.__src)[2]
+        pd=urllib.parse.urlparse(self.__dst)[2]
+        if ps==pd: raise DAV_Error(403)
 
         return dc.copyone(self.__src,self.__dst,self.__overwrite)
 
@@ -65,12 +66,12 @@ class COPY:
 
         ### some basic tests
         # test if dest exists and overwrite is false
-        if dc.exists(self.__dst) and not self.__overwrite: raise DAV_Error, 412
+        if dc.exists(self.__dst) and not self.__overwrite: raise DAV_Error(412)
         # test if src and dst are the same
         # (we assume that both uris are on the same server!)
-        ps=urlparse.urlparse(self.__src)[2]
-        pd=urlparse.urlparse(self.__dst)[2]
-        if ps==pd: raise DAV_Error, 403
+        ps=urllib.parse.urlparse(self.__src)[2]
+        pd=urllib.parse.urlparse(self.__dst)[2]
+        if ps==pd: raise DAV_Error(403)
         
         
         result=dc.copytree(self.__src,self.__dst,self.__overwrite)

@@ -8,11 +8,12 @@ resources and collections
 
 """
 
-from string import split,replace,joinfields
-import urlparse
+from __future__ import absolute_import
+from six.moves import urllib
 
-from utils import create_treelist, is_prefix
-from errors import *
+from .utils import create_treelist, is_prefix
+from .errors import *
+from six.moves import range
 
 def deltree(dc,uri,exclude={}):
     """ delete a tree of resources
@@ -34,7 +35,7 @@ def deltree(dc,uri,exclude={}):
     result={}
 
     for i in range(len(tlist),0,-1):
-        problem_uris=result.keys()
+        problem_uris=list(result.keys())
         element=tlist[i-1]
 
         # test here, if an element is a prefix of an uri which
@@ -61,7 +62,8 @@ def deltree(dc,uri,exclude={}):
         # now delete stuff
         try:
             delone(dc,element)
-        except DAV_Error, (ec,dd):
+        except DAV_Error as xxx_todo_changeme:
+            (ec,dd) = xxx_todo_changeme.args
             result[element]=ec
 
     return result
@@ -89,7 +91,7 @@ def copy(dc,src,dst):
 
     # destination should have been deleted before
     if dc.exists(dst): 
-        raise DAV_Error, 412
+        raise DAV_Error(412)
 
     # source should exist also
     if not dc.exists(src): 
@@ -116,7 +118,8 @@ def copyone(dc,src,dst,overwrite=None):
 
     try:
         copy(dc, src, dst)    # pass thru exceptions
-    except DAV_Error, (ec, dd):
+    except DAV_Error as xxx_todo_changeme2:
+        (ec, dd) = xxx_todo_changeme2.args
         return ec
 
 def copytree(dc,src,dst,overwrite=None):
@@ -147,10 +150,10 @@ def copytree(dc,src,dst,overwrite=None):
     result = {}
 
     # prepare destination URIs (get the prefix)
-    dpath = urlparse.urlparse(dst)[2]
+    dpath = urllib.parse.urlparse(dst)[2]
 
     for element in tlist:
-        problem_uris = result.keys()
+        problem_uris = list(result.keys())
 
         # now URIs get longer and longer thus we have
         # to test if we had a parent URI which we were not
@@ -169,13 +172,14 @@ def copytree(dc,src,dst,overwrite=None):
         # the actual source URI. -> actual_dst
         # ("subtract" the base src from the URI and prepend the
         # dst prefix to it.)
-        esrc=replace(element,src,"")
+        esrc=element.replace(src,"")
         actual_dst=dpath+esrc
 
         # now copy stuff
         try:
             copy(dc,element,actual_dst)
-        except DAV_Error, (ec,dd):
+        except DAV_Error as xxx_todo_changeme1:
+            (ec,dd) = xxx_todo_changeme1.args
             result[element]=ec
 
     return result

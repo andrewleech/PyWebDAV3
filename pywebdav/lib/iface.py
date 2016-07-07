@@ -7,12 +7,12 @@ class.
 
 """
 
+from __future__ import absolute_import
 from xml.dom import minidom
-from locks import LockManager
-from errors import *
+from .locks import LockManager
+from .errors import *
 
 import time
-from string import lower
 
 class dav_interface:
     """ interface class for implementing DAV servers """
@@ -55,9 +55,9 @@ class dav_interface:
     def get_prop2(self,uri,ns,pname):
         """ return the value of a property
 
-
         """
-        if lower(ns)=="dav:": return self.get_dav(uri,pname)
+        if ns.lower() == "dav:":
+            return self.get_dav(uri,pname)
 
         raise DAV_NotFound
 
@@ -68,7 +68,7 @@ class dav_interface:
         ns        -- namespace of the property
         pname        -- name of the property
         """
-        if self.M_NS.has_key(ns):
+        if ns in self.M_NS:
             prefix=self.M_NS[ns]
         else:
             raise DAV_NotFound

@@ -1,4 +1,6 @@
-from ConfigParser import SafeConfigParser
+from __future__ import absolute_import
+from __future__ import print_function
+from six.moves.configparser import SafeConfigParser
 
 class Configuration:
     def __init__(self, fileName):
@@ -55,4 +57,4 @@ class Section:
 # Test
 if __name__ == '__main__':
     c = Configuration('Importador.ini')
-    print c.Origem.host, c.Origem.port
+    print(c.Origem.host, c.Origem.port)

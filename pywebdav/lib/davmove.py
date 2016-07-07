@@ -1,15 +1,13 @@
-import sys
-import string
-import urlparse
-import urllib
-from StringIO import StringIO
+from __future__ import absolute_import
+from six.moves import urllib
+import urllib.parse
 
-import utils
-from constants import COLLECTION, OBJECT, DAV_PROPS
-from constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
-from errors import *
-from utils import create_treelist, quote_uri, gen_estring, make_xmlresponse
-from davcmd import moveone, movetree
+from . import utils
+from .constants import COLLECTION, OBJECT, DAV_PROPS
+from .constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
+from .errors import *
+from .utils import create_treelist, quote_uri, gen_estring, make_xmlresponse
+from .davcmd import moveone, movetree
 
 class MOVE:
     """ move resources and eventually create multistatus responses
@@ -43,12 +41,12 @@ class MOVE:
 
         ### some basic tests
         # test if dest exists and overwrite is false
-        if dc.exists(self.__dst) and not self.__overwrite: raise DAV_Error, 412
+        if dc.exists(self.__dst) and not self.__overwrite: raise DAV_Error(412)
         # test if src and dst are the same
         # (we assume that both uris are on the same server!)
-        ps=urlparse.urlparse(self.__src)[2]
-        pd=urlparse.urlparse(self.__dst)[2]
-        if ps==pd: raise DAV_Error, 403
+        ps=urllib.parse.urlparse(self.__src)[2]
+        pd=urllib.parse.urlparse(self.__dst)[2]
+        if ps==pd: raise DAV_Error(403)
 
         return dc.moveone(self.__src,self.__dst,self.__overwrite)
 
@@ -63,12 +61,12 @@ class MOVE:
 
         ### some basic tests
         # test if dest exists and overwrite is false
-        if dc.exists(self.__dst) and not self.__overwrite: raise DAV_Error,  412
+        if dc.exists(self.__dst) and not self.__overwrite: raise DAV_Error(412)
         # test if src and dst are the same
         # (we assume that both uris are on the same server!)
-        ps=urlparse.urlparse(self.__src)[2]
-        pd=urlparse.urlparse(self.__dst)[2]
-        if ps==pd: raise DAV_Error,  403
+        ps=urllib.parse.urlparse(self.__src)[2]
+        pd=urllib.parse.urlparse(self.__dst)[2]
+        if ps==pd: raise DAV_Error(403)
 
         result=dc.movetree(self.__src,self.__dst,self.__overwrite)
         if not result: return None

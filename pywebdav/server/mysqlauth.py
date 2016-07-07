@@ -15,7 +15,10 @@
 #Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 #MA 02111-1307, USA
 
-from fileauth import DAVAuthHandler
+from __future__ import absolute_import
+from __future__ import print_function
+from .fileauth import DAVAuthHandler
+import sys
 
 class MySQLAuthHandler(DAVAuthHandler):
     """
@@ -31,7 +34,7 @@ class MySQLAuthHandler(DAVAuthHandler):
         Mysql=self._config.MySQL
         DB=Mconn(Mysql.user,Mysql.passwd,Mysql.host,Mysql.port,Mysql.dbtable)
         if self.verbose:
-            print >>sys.stderr,user,command
+            print(user,command, file=sys.stderr)
 
         qry="select * from %s.Users where User='%s' and Pass='%s'"%(Mysql.dbtable,user,pw)
         Auth=DB.execute(qry)

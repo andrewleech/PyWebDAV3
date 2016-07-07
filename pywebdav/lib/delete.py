@@ -1,10 +1,7 @@
-import os
-import string
-import urllib
-from StringIO import StringIO
+from __future__ import absolute_import
 
-from utils import gen_estring, quote_uri, make_xmlresponse
-from davcmd import deltree
+from .utils import gen_estring, quote_uri, make_xmlresponse
+from .davcmd import deltree
 
 class DELETE:
 
@@ -18,7 +15,7 @@ class DELETE:
         dc=self.__dataclass
         result=dc.deltree(self.__uri)
 
-        if not len(result.items()):
+        if not len(list(result.items())):
             return None # everything ok
 
         # create the result element

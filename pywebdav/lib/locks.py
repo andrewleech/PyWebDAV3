@@ -1,12 +1,7 @@
-import os
-import sys
+from __future__ import absolute_import
 import time
-import socket
-import string
-import posixpath
-import base64
-import urlparse
-import urllib
+from six.moves import urllib
+import urllib.parse
 import random
 
 import logging
@@ -16,9 +11,8 @@ log = logging.getLogger(__name__)
 import xml.dom
 from xml.dom import minidom
 
-from utils import rfc1123_date, IfParser, tokenFinder
-from string import atoi,split
-from errors import *
+from .utils import rfc1123_date, IfParser, tokenFinder
+from .errors import *
 
 tokens_to_lock = {}
 uris_to_token = {}
@@ -31,11 +25,11 @@ class LockManager:
 
     def _l_isLocked(self, uri):
         tokens, uris = self._init_locks()
-        return uris.has_key(uri)
+        return uri in uris
 
     def _l_hasLock(self, token):
         tokens, uris = self._init_locks()
-        return tokens.has_key(token)
+        return token in tokens
 
     def _l_getLockForUri(self, uri):
         tokens, uris = self._init_locks()
@@ -47,7 +41,7 @@ class LockManager:
 
     def _l_delLock(self, token):
         tokens, uris = self._init_locks()
-        if tokens.has_key(token):
+        if token in tokens:
             del uris[tokens[token].uri]
             del tokens[token]
 
@@ -91,8 +85,8 @@ class LockManager:
         if self._config.DAV.getboolean('verbose') is True:
             log.info('UNLOCKing resource %s' % self.headers)
 
-        uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri = urllib.unquote(uri)
+        uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
+        uri = urllib.parse.unquote(uri)
 
         # check lock token - must contain a dash
         if not self.headers.get('Lock-Token', '').find('-')>0:
@@ -112,14 +106,14 @@ class LockManager:
         log.info('LOCKing resource %s' % self.headers)
 
         body = None
-        if self.headers.has_key('Content-Length'):
+        if 'Content-Length' in self.headers:
             l = self.headers['Content-Length']
-            body = self.rfile.read(atoi(l))
+            body = self.rfile.read(int(l))
 
         depth = self.headers.get('Depth', 'infinity')
 
-        uri = urlparse.urljoin(self.get_baseuri(dc), self.path)
-        uri = urllib.unquote(uri)
+        uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
+        uri = urllib.parse.unquote(uri)
         log.info('do_LOCK: uri = %s' % uri)
 
         ifheader = self.headers.get('If')

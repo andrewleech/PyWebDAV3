@@ -1,8 +1,9 @@
-from propfind import PROPFIND
+from __future__ import absolute_import
+from .propfind import PROPFIND
 from xml.dom import minidom
 domimpl = minidom.getDOMImplementation()
 
-from utils import get_parenturi
+from .utils import get_parenturi
 
 class REPORT(PROPFIND):
 

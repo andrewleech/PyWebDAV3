@@ -1,12 +1,10 @@
-import sys
-import urlparse
+from __future__ import absolute_import
 import os
-import time
-from string import joinfields, split, lower
 import logging
 import types
 import shutil
-
+from io import StringIO
+from six.moves import urllib
 from pywebdav.lib.constants import COLLECTION, OBJECT
 from pywebdav.lib.errors import *
 from pywebdav.lib.iface import *
@@ -77,7 +75,7 @@ class FilesystemHandler(dav_interface):
         """ Sets the directory """
 
         if not os.path.isdir(path):
-            raise Exception, '%s not must be a directory!' % path
+            raise Exception('%s not must be a directory!' % path)
 
         self.directory = path
 
@@ -89,7 +87,7 @@ class FilesystemHandler(dav_interface):
     def uri2local(self,uri):
         """ map uri in baseuri and local part """
 
-        uparts=urlparse.urlparse(uri)
+        uparts=urllib.parse.urlparse(uri)
         fileloc=uparts[2][1:]
         filename=os.path.join(self.directory,fileloc)
         filename=os.path.normpath(filename)
@@ -98,10 +96,10 @@ class FilesystemHandler(dav_interface):
     def local2uri(self,filename):
         """ map local filename to self.baseuri """
 
-        pnum=len(split(self.directory.replace("\\","/"),"/"))
-        parts=split(filename.replace("\\","/"),"/")[pnum:]
-        sparts="/"+joinfields(parts,"/")
-        uri=urlparse.urljoin(self.baseuri,sparts)
+        pnum=len(self.directory.replace("\\","/").split("/"))
+        parts=filename.replace("\\","/").split("/")[pnum:]
+        sparts="/"+"/".join(parts)
+        uri=urllib.parse.urljoin(self.baseuri,sparts)
         return uri
 
 
@@ -133,7 +131,7 @@ class FilesystemHandler(dav_interface):
         if os.path.exists(path):
             if os.path.isfile(path):
                 file_size = os.path.getsize(path)
-                if range == None:
+                if range is None:
                     fp=open(path,"r")
                     log.info('Serving content of %s' % uri)
                     return Resource(fp, file_size)
@@ -160,9 +158,8 @@ class FilesystemHandler(dav_interface):
                     return Resource(fp, range[1] - range[0])
             elif os.path.isdir(path):
                 # GET for collections is defined as 'return s/th meaningful' :-)
-                from StringIO import StringIO
-                stio = StringIO('Directory at %s' % uri)
-                return Resource(StringIO('Directory at %s' % uri), stio.len)
+                msg = 'Directory at %s' % uri
+                return Resource(StringIO(msg), len(msg))
             else:
                 # also raise an error for collections
                 # don't know what should happen then..
@@ -214,7 +211,7 @@ class FilesystemHandler(dav_interface):
 
         raise DAV_NotFound
 
-    def _get_dav_getcontenttype(self,uri):
+    def _get_dav_getcontenttype(self, uri):
         """ find out yourself! """
 
         path=self.uri2local(uri)
@@ -239,7 +236,7 @@ class FilesystemHandler(dav_interface):
             elif os.path.isdir(path):
                 return "httpd/unix-directory"
 
-        raise DAV_NotFound, 'Could not find %s' % path
+        raise DAV_NotFound('Could not find %s' % path)
 
     def put(self, uri, data, content_type=None):
         """ put the object into the filesystem """
@@ -251,12 +248,12 @@ class FilesystemHandler(dav_interface):
                     fp.write(d)
             else:
                 if data:
-                    fp.write(data)
+                    fp.write(data.decode())
             fp.close()
             log.info('put: Created %s' % uri)
         except:
             log.info('put: Could not create %s' % uri)
-            raise DAV_Error, 424
+            raise DAV_Error(424)
 
         return None
 
@@ -269,12 +266,12 @@ class FilesystemHandler(dav_interface):
 
         # test if file already exists
         if os.path.exists(path):
-            raise DAV_Error,405
+            raise DAV_Error(405)
 
         # test if parent exists
         h,t=os.path.split(path)
         if not os.path.exists(h):
-            raise DAV_Error, 409
+            raise DAV_Error(409)
 
         # test, if we are allowed to create it
         try:
@@ -309,7 +306,7 @@ class FilesystemHandler(dav_interface):
 
         try:
             os.unlink(path)
-        except OSError, ex:
+        except OSError as ex:
             log.info('rm: Forbidden (%s)' % ex)
             raise DAV_Forbidden # forbidden
 
@@ -391,7 +388,7 @@ class FilesystemHandler(dav_interface):
             shutil.copy(srcfile, dstfile)
         except (OSError, IOError):
             log.info('copy: forbidden')
-            raise DAV_Error, 409
+            raise DAV_Error(409)
 
     def copycol(self, src, dst):
         """ copy a collection.

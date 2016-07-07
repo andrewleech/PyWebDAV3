@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 
-try:
-    from ez_setup import use_setuptools
-    use_setuptools()
-except ImportError:
-    pass
-
+from __future__ import absolute_import
 from setuptools import setup, find_packages
 
 VERSION = open('VERSION', 'r').read()
@@ -14,7 +9,7 @@ VERSION = VERSION.replace('\n', '')
 CHANGES = open('doc/Changes', 'r').read()
 
 DOC = """
-WebDAV library for python.
+WebDAV library for python3.
 
 Consists of a *server* that is ready to run
 Serve and the DAV package that provides WebDAV server(!) functionality.
@@ -45,19 +40,19 @@ to the server.
 Examples
 ========
 
-Example (using easy_install)::
+Example (using pip)::
 
-    easy_install PyWebDAV
+    pip install PyWebDAV3
     davserver -D /tmp -n
 
 Example (unpacking file locally)::
 
-    tar xvzf PyWebDAV-$VERSION.tar.gz
+    tar xvzf PyWebDAV3-$VERSION.tar.gz
     cd pywebdav
     python setup.py develop
     davserver -D /tmp -n
 
-For more information: http://code.google.com/p/pywebdav/
+For more information: https://github.com/andrewleech/PyWebDAV3
 
 Changes
 =======
@@ -65,13 +60,13 @@ Changes
 %s
 """ % CHANGES
 
-setup(name='PyWebDAV',
-      description='WebDAV library including a standalone server for python',
-      author='Simon Pamies',
-      author_email='spamsch@gmail.com',
-      maintainer='Simon Pamies',
-      maintainer_email='spamsch@gmail.com',
-      url='http://code.google.com/p/pywebdav/',
+setup(name='PyWebDAV3',
+      description='WebDAV library including a standalone server for python3',
+      author='Simon Pamies (porting to 3 by Andrew Leech)',
+      author_email='spamsch@gmail.com (andrew@alelec.net)',
+      maintainer='Andrew Leech',
+      maintainer_email='andrew@alelec.net',
+      url='https://github.com/andrewleech/PyWebDAV3',
       platforms=['Unix', 'Windows'],
       license='GPL v2',
       version=VERSION,
@@ -102,5 +97,6 @@ setup(name='PyWebDAV',
       zip_safe=False,
       entry_points={
         'console_scripts': ['davserver = pywebdav.server.server:run']
-        }
+        },
+      install_requires = ['six']
       )

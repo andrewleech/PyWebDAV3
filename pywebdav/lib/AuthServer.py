@@ -4,9 +4,10 @@ This module builds on BaseHTTPServer and implements basic authentication
 
 """
 
+from __future__ import absolute_import
 import base64
 import binascii
-import BaseHTTPServer
+import six.moves.BaseHTTPServer
 
 
 DEFAULT_AUTH_ERROR_MESSAGE = """
@@ -28,7 +29,7 @@ def _quote_html(html):
     return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-class AuthRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
     """
     Simple handler that can check for auth headers
 
@@ -41,7 +42,7 @@ class AuthRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     DO_AUTH = 1
 
     def parse_request(self):
-        if not BaseHTTPServer.BaseHTTPRequestHandler.parse_request(self):
+        if not six.moves.BaseHTTPServer.BaseHTTPRequestHandler.parse_request(self):
             return False
 
         if self.DO_AUTH:
@@ -53,8 +54,8 @@ class AuthRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             if scheme != 'Basic':
                 self.send_error(501)
                 return False
-            credentials = base64.decodestring(credentials)
-            user, password = credentials.split(':', 2)
+            credentials = base64.decodebytes(credentials.encode()).decode()
+            user, password = credentials.split(':')
             if not self.get_userinfo(user, password, self.command):
                 self.send_autherror(401, "Authorization Required")
                 return False
@@ -73,12 +74,12 @@ class AuthRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         """
         try:
-            short, long = self.responses[code]
+            short, int = self.responses[code]
         except KeyError:
-            short, long = '???', '???'
+            short, int = '???', '???'
         if message is None:
             message = short
-        explain = long
+        explain = int
         self.log_error("code %d, message %s", code, message)
 
         # using _quote_html to prevent Cross Site Scripting attacks (see bug

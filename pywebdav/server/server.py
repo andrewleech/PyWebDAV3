@@ -7,25 +7,27 @@ This is an example implementation of a DAVserver using the DAV package.
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import getopt, sys, os
 import logging
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('pywebdav')
 
-from BaseHTTPServer import HTTPServer
-from SocketServer import ThreadingMixIn
+from six.moves.BaseHTTPServer import HTTPServer
+from six.moves.socketserver import ThreadingMixIn
 
 try:
     import pywebdav.lib
 except ImportError:
-    print 'pywebdav.lib package not found! Please install into site-packages or set PYTHONPATH!'
+    print('pywebdav.lib package not found! Please install into site-packages or set PYTHONPATH!')
     sys.exit(2)
 
-from fileauth import DAVAuthHandler
-from mysqlauth import MySQLAuthHandler
-from fshandler import FilesystemHandler
-from daemonize import startstop
+from .fileauth import DAVAuthHandler
+from .mysqlauth import MySQLAuthHandler
+from .fshandler import FilesystemHandler
+from .daemonize import startstop
 
 from pywebdav.lib.INI_Parse import Configuration
 from pywebdav.lib import VERSION, AUTHOR
@@ -54,8 +56,9 @@ def runserver(
     host = host.strip()
 
     if not os.path.isdir(directory):
-        log.error('%s is not a valid directory!' % directory)
-        return sys.exit(233)
+        os.makedirs(directory)
+        # log.error('%s is not a valid directory!' % directory)
+        # return sys.exit(233)
 
     # basic checks against wrong hosts
     if host.find('/') != -1 or host.find(':') != -1:
@@ -93,7 +96,7 @@ def runserver(
 
     # initialize server on specified port
     runner = server( (host, port), handler )
-    print('Listening on %s (%i)' % (host, port))
+    print(('Listening on %s (%i)' % (host, port)))
 
     try:
         runner.serve_forever()
@@ -196,9 +199,9 @@ def run():
                  'daemon=', 'noauth', 'help', 'verbose', 'mysql', 
                  'icounter=', 'config=', 'nolock', 'nomime', 'loglevel', 'noiter',
                  'baseurl='])
-    except getopt.GetoptError, e:
-        print usage
-        print '>>>> ERROR: %s' % str(e)
+    except getopt.GetoptError as e:
+        print(usage)
+        print('>>>> ERROR: %s' % str(e))
         sys.exit(2)
 
     for o,a in opts:
@@ -237,7 +240,7 @@ def run():
             loglevel = a.lower()
 
         if o in ['-h', '--help']:
-            print usage
+            print(usage)
             sys.exit(2)
 
         if o in ['-n', '--noauth']:
@@ -331,9 +334,9 @@ def run():
 
     if not noauth and daemonaction not in ['status', 'stop']:
         if not user:
-            print usage
-            print >>sys.stderr, '>> ERROR: No parameter specified!'
-            print >>sys.stderr, '>> Example: davserver -D /tmp -n'
+            print(usage)
+            print('>> ERROR: No parameter specified!', file=sys.stderr)
+            print('>> Example: davserver -D /tmp -n', file=sys.stderr)
             sys.exit(3)
 
     if daemonaction == 'status':

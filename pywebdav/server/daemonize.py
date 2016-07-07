@@ -41,6 +41,8 @@
       
       http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/66012
 '''
+from __future__ import absolute_import
+from __future__ import print_function
 import sys, os, time
 from signal import SIGTERM
 
@@ -60,7 +62,7 @@ def deamonize(stdout='/dev/null', stderr=None, stdin='/dev/null',
     try:
         pid = os.fork()
         if pid > 0: sys.exit(0) # Exit first parent.
-    except OSError, e:
+    except OSError as e:
         sys.stderr.write("fork #1 failed: (%d) %s\n" % (e.errno, e.strerror))
         sys.exit(1)
 
@@ -73,19 +75,19 @@ def deamonize(stdout='/dev/null', stderr=None, stdin='/dev/null',
     try:
         pid = os.fork()
         if pid > 0: sys.exit(0) # Exit second parent.
-    except OSError, e:
+    except OSError as e:
         sys.stderr.write("fork #2 failed: (%d) %s\n" % (e.errno, e.strerror))
         sys.exit(1)
 
     # Open file descriptors and print start message
     if not stderr: stderr = stdout
-    si = file(stdin, 'r')
-    so = file(stdout, 'a+')
-    se = file(stderr, 'a+', 0)
+    si = open(stdin, 'r')
+    so = open(stdout, 'a+')
+    se = open(stderr, 'a+', 0)
     pid = str(os.getpid())
     sys.stderr.write("\n%s\n" % startmsg % pid)
     sys.stderr.flush()
-    if pidfile: file(pidfile,'w+').write("%s\n" % pid)
+    if pidfile: open(pidfile,'w+').write("%s\n" % pid)
 
     if sys.stdin.closed: sys.stdin = open('/dev/null', 'r')
     if sys.stdout.closed: sys.stdout = open('/dev/null', 'a+')
@@ -100,7 +102,7 @@ def startstop(stdout='/dev/null', stderr=None, stdin='/dev/null',
               pidfile='pid.txt', startmsg = 'started with pid %s', action='start' ):
     if action:
         try:
-            pf  = file(pidfile,'r')
+            pf  = open(pidfile,'r')
             pid = int(pf.read().strip())
             pf.close()
         except IOError:
@@ -119,7 +121,7 @@ def startstop(stdout='/dev/null', stderr=None, stdin='/dev/null',
                   while 1:
                       os.kill(pid,SIGTERM)
                       time.sleep(1)
-               except OSError, err:
+               except OSError as err:
                   err = str(err)
                   if err.find("No such process") > 0:
                       os.remove(pidfile)
@@ -128,7 +130,7 @@ def startstop(stdout='/dev/null', stderr=None, stdin='/dev/null',
                       action = 'start'
                       pid = None
                   else:
-                      print str(err)
+                      print(str(err))
                       sys.exit(1)
 
         if 'start' == action:

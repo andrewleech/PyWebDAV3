@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logging
 
 log = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ import sys
 class Mconn:
     def connect(self,username,userpasswd,host,port,db):
         try: connection = MySQLdb.connect(host=host, port=int(port), user=username, passwd=userpasswd,db=db)
-        except MySQLdb.OperationalError, message:
+        except MySQLdb.OperationalError as message:
             log.error("%d:\n%s" % (message[ 0 ], message[ 1 ] ))
             return 0
         else:
@@ -24,11 +25,11 @@ class Mconn:
     def execute(self,qry):
         if self.db:
             try: res=self.db.execute(qry)
-            except MySQLdb.OperationalError, message:
+            except MySQLdb.OperationalError as message:
                 log.error("Error %d:\n%s" % (message[ 0 ], message[ 1 ] ))
                 return 0
 
-            except MySQLdb.ProgrammingError, message:
+            except MySQLdb.ProgrammingError as message:
                 log.error("Error %d:\n%s" % (message[ 0 ], message[ 1 ] ))
                 return 0
 

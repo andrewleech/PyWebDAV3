@@ -1,19 +1,19 @@
+from __future__ import absolute_import
 import time
 import re
 
 from xml.dom import minidom
 
-import urlparse
-from string import lower, split, atoi, joinfields
-from StringIO import StringIO
+from six.moves import urllib
+import urllib.parse
 
-from constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
-from BaseHTTPServer import BaseHTTPRequestHandler
+from .constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
+from six.moves.BaseHTTPServer import BaseHTTPRequestHandler
 
 def gen_estring(ecode):
     """ generate an error string from the given code """
-    ec=atoi(str(ecode))
-    if BaseHTTPRequestHandler.responses.has_key(ec):
+    ec=int(ecode)
+    if ec in BaseHTTPRequestHandler.responses:
         return "HTTP/1.1 %s %s" %(ec, BaseHTTPRequestHandler.responses[ec][0])
     else:
         return "HTTP/1.1 %s" %(ec)
@@ -41,7 +41,7 @@ def parse_propfind(xml_doc):
                     continue
                 ns = e.namespaceURI
                 ename = e.localName
-                if props.has_key(ns):
+                if ns in props:
                     props[ns].append(ename)
                 else:
                     props[ns]=[ename]
@@ -85,28 +85,25 @@ def is_prefix(uri1,uri2):
 
 def quote_uri(uri):
     """ quote an URL but not the protocol part """
-    import urlparse
-    import urllib
-
-    up=urlparse.urlparse(uri)
-    np=urllib.quote(up[2])
-    return urlparse.urlunparse((up[0],up[1],np,up[3],up[4],up[5]))
+    up=urllib.parse.urlparse(uri)
+    np=urllib.parse.quote(up[2])
+    return urllib.parse.urlunparse((up[0],up[1],np,up[3],up[4],up[5]))
 
 def get_uriparentpath(uri):
     """ extract the uri path and remove the last element """
-    up=urlparse.urlparse(uri)
-    return joinfields(split(up[2],"/")[:-1],"/")
+    up=urllib.parse.urlparse(uri)
+    return "/".join(up[2].split("/")[:-1])
 
 def get_urifilename(uri):
     """ extract the uri path and return the last element """
-    up=urlparse.urlparse(uri)
-    return split(up[2],"/")[-1]
+    up=urllib.parse.urlparse(uri)
+    return up[2].split("/")[-1]
 
 def get_parenturi(uri):
     """ return the parent of the given resource"""
-    up=urlparse.urlparse(uri)
-    np=joinfields(split(up[2],"/")[:-1],"/")
-    return urlparse.urlunparse((up[0],up[1],np,up[3],up[4],up[5]))
+    up=urllib.parse.urlparse(uri)
+    np="/".join(up[2].split("/")[:-1])
+    return urllib.parse.urlunparse((up[0],up[1],np,up[3],up[4],up[5]))
 
 ### XML utilities
 

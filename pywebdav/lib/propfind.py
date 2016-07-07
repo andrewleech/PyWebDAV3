@@ -1,13 +1,14 @@
+from __future__ import absolute_import
 import xml.dom.minidom
 domimpl = xml.dom.minidom.getDOMImplementation()
 
 import logging
-import urlparse
-import urllib
+from six.moves import urllib
+import urllib.parse
 
-import utils
-from constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
-from errors import DAV_Error, DAV_NotFound
+from . import utils
+from .constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
+from .errors import DAV_Error, DAV_NotFound
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class PROPFIND:
         if self.request_type == RT_PROP:
             df = self.create_prop()
 
-        if df != None:
+        if df is not None:
             return df
 
         # no body means ALLPROP!
@@ -195,13 +196,13 @@ class PROPFIND:
             uri = self._dataclass.baseurl + '/' + '/'.join(uri.split('/')[3:])
 
         # write href information
-        uparts = urlparse.urlparse(uri)
+        uparts = urllib.parse.urlparse(uri)
         fileloc = uparts[2]
         href = doc.createElement("D:href")
 
         huri = doc.createTextNode(uparts[0] + '://' +
                                   '/'.join(uparts[1:2]) +
-                                  urllib.quote(fileloc))
+                                  urllib.parse.quote(fileloc))
         href.appendChild(huri)
         re.appendChild(href)
 
@@ -245,13 +246,13 @@ class PROPFIND:
             uri = self._dataclass.baseurl + '/' + '/'.join(uri.split('/')[3:])
 
         # write href information
-        uparts = urlparse.urlparse(uri)
+        uparts = urllib.parse.urlparse(uri)
         fileloc = uparts[2]
         href = doc.createElement("D:href")
 
         huri = doc.createTextNode(uparts[0] + '://' +
                                   '/'.join(uparts[1:2]) +
-                                  urllib.quote(fileloc))
+                                  urllib.parse.quote(fileloc))
         href.appendChild(huri)
         re.appendChild(href)
 
@@ -293,7 +294,7 @@ class PROPFIND:
         re.appendChild(ps)
 
         # now write the errors!
-        if len(bad_props.items()):
+        if len(list(bad_props.items())):
 
             # write a propstat for each error code
             for ecode in bad_props.keys():
@@ -341,8 +342,8 @@ class PROPFIND:
                 try:
                     r = ddc.get_prop(uri, ns, prop)
                     good_props[ns][prop] = r
-                except DAV_Error, error_code:
-                    ec = error_code[0]
+                except DAV_Error as error_code:
+                    ec = error_code.args[0]
 
                 # ignore props with error_code if 0 (invisible)
                 if ec == 0:

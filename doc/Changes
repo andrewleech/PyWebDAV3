@@ -1,4 +1,11 @@
 
+0.9.10 (July 21 2016)
+---------------------
+
+The original package name PyWebDAV was being referenced in lib, causing the server to fail
+No other change in functionality
+[Andrew Leech]
+
 0.9.9 (July 8 2016)
 ---------------------
 

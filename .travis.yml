@@ -3,7 +3,7 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
-# command to install dependencies
+# install dependencies
 install: "pip install six"
-# command to run tests
+# run tests
 script: py.test

@@ -34,6 +34,7 @@ def test_run_litmus():
     user = 'test'
     password = 'pass'
     rundir = tempfile.mkdtemp()
+    result = []
     try:
 
         sys.argv = sys.argv[0:1] + ['-D', rundir, '-u', user, '-p', password, '-H', 'localhost', '--port', '8078']
@@ -47,14 +48,13 @@ def test_run_litmus():
             results = subprocess.check_output([litmus, 'http://localhost:8078', user, password])
         except subprocess.CalledProcessError as ex:
             results = ex.output
-        result = []
         lines = results.decode().split('\n')
         for line in lines:
             line = line.split('\r')[-1]
             result.append(line)
             if len(re.findall('^ *\d+\.', line)):
                 assert line.endswith('pass'), line
-        print('\n'.join(result))
 
     finally:
+        print('\n'.join(result))
         shutil.rmtree(rundir)

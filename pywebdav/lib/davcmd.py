@@ -62,8 +62,8 @@ def deltree(dc,uri,exclude={}):
         # now delete stuff
         try:
             delone(dc,element)
-        except DAV_Error as xxx_todo_changeme:
-            (ec,dd) = xxx_todo_changeme.args
+        except DAV_Error as error:
+            (ec,dd) = error.args
             result[element]=ec
 
     return result
@@ -118,8 +118,8 @@ def copyone(dc,src,dst,overwrite=None):
 
     try:
         copy(dc, src, dst)    # pass thru exceptions
-    except DAV_Error as xxx_todo_changeme2:
-        (ec, dd) = xxx_todo_changeme2.args
+    except DAV_Error as error:
+        (ec, dd) = error.args
         return ec
 
 def copytree(dc,src,dst,overwrite=None):
@@ -178,8 +178,8 @@ def copytree(dc,src,dst,overwrite=None):
         # now copy stuff
         try:
             copy(dc,element,actual_dst)
-        except DAV_Error as xxx_todo_changeme1:
-            (ec,dd) = xxx_todo_changeme1.args
+        except DAV_Error as error:
+            (ec,dd) = error.args
             result[element]=ec
 
     return result

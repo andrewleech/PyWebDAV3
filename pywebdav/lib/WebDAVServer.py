@@ -247,8 +247,8 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         # get the data
         try:
             data = dc.get_data(uri, range)
-        except DAV_Error as xxx_todo_changeme3:
-            (ec, dd) = xxx_todo_changeme3.args
+        except DAV_Error as error:
+            (ec, dd) = error.args
             self.send_status(ec)
             return ec
 
@@ -325,8 +325,8 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         try:
             DATA = b'%s\n' % pf.createResponse()
-        except DAV_Error as xxx_todo_changeme4:
-            (ec, dd) = xxx_todo_changeme4.args
+        except DAV_Error as error:
+            (ec, dd) = error.args
             return self.send_status(ec)
 
         # work around MSIE DAV bug for creation and modified date
@@ -366,8 +366,8 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         try:
             DATA = '%s\n' % rp.createResponse()
-        except DAV_Error as xxx_todo_changeme5:
-            (ec, dd) = xxx_todo_changeme5.args
+        except DAV_Error as error:
+            (ec, dd) = error.args
             return self.send_status(ec)
 
         self.send_body_chunks_if_http11(DATA, 207, 'Multi-Status',
@@ -393,8 +393,8 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
             dc.mkcol(uri)
             self.send_status(201)
             self.log_request(201)
-        except DAV_Error as xxx_todo_changeme6:
-            (ec, dd) = xxx_todo_changeme6.args
+        except DAV_Error as error:
+            (ec, dd) = error.args
             self.log_request(ec)
             return self.send_status(ec)
 
@@ -602,8 +602,8 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
             try:
                 dc.put(uri, body, content_type)
-            except DAV_Error as xxx_todo_changeme:
-                (ec, dd) = xxx_todo_changeme.args
+            except DAV_Error as error:
+                (ec, dd) = error.args
                 return self.send_status(ec)
 
             self.send_body(None, 201, 'Created', '', headers=headers)
@@ -643,16 +643,16 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         """ copy one resource to another """
         try:
             self.copymove(COPY)
-        except DAV_Error as xxx_todo_changeme7:
-            (ec, dd) = xxx_todo_changeme7.args
+        except DAV_Error as error:
+            (ec, dd) = error.args
             return self.send_status(ec)
 
     def do_MOVE(self):
         """ move one resource to another """
         try:
             self.copymove(MOVE)
-        except DAV_Error as xxx_todo_changeme8:
-            (ec, dd) = xxx_todo_changeme8.args
+        except DAV_Error as error:
+            (ec, dd) = error.args
             return self.send_status(ec)
 
     def copymove(self, CLASS):
@@ -701,15 +701,15 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         if dc.is_collection(source_uri):
             try:
                 res = cp.tree_action()
-            except DAV_Error as xxx_todo_changeme1:
-                (ec, dd) = xxx_todo_changeme1.args
+            except DAV_Error as error:
+                (ec, dd) = error.args
                 self.send_status(ec)
                 return
         else:
             try:
                 res = cp.single_action()
-            except DAV_Error as xxx_todo_changeme2:
-                (ec, dd) = xxx_todo_changeme2.args
+            except DAV_Error as error:
+                (ec, dd) = error.args
                 self.send_status(ec)
                 return
 

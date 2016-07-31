@@ -74,12 +74,12 @@ class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
 
         """
         try:
-            short, int = self.responses[code]
+            short, long = self.responses[code]
         except KeyError:
-            short, int = '???', '???'
+            short, long = '???', '???'
         if message is None:
             message = short
-        explain = int
+        explain = long
         self.log_error("code %d, message %s", code, message)
 
         # using _quote_html to prevent Cross Site Scripting attacks (see bug

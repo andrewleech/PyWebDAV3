@@ -2,11 +2,12 @@
 
 from __future__ import absolute_import
 from setuptools import setup, find_packages
+from io import open
 
-VERSION = open('VERSION', 'r').read()
+VERSION = open('VERSION', 'r', encoding='utf-8').read()
 VERSION = VERSION.replace('\n', '')
 
-CHANGES = open('doc/Changes', 'r').read()
+CHANGES = open('doc/Changes', 'r', encoding='utf-8').read()
 
 DOC = """
 WebDAV library for python3.

@@ -20,14 +20,15 @@ from six.moves.socketserver import ThreadingMixIn
 
 try:
     import pywebdav.lib
+    import pywebdav.server
 except ImportError:
     print('pywebdav.lib package not found! Please install into site-packages or set PYTHONPATH!')
     sys.exit(2)
 
-from .fileauth import DAVAuthHandler
-from .mysqlauth import MySQLAuthHandler
-from .fshandler import FilesystemHandler
-from .daemonize import startstop
+from pywebdav.server.fileauth import DAVAuthHandler
+from pywebdav.server.mysqlauth import MySQLAuthHandler
+from pywebdav.server.fshandler import FilesystemHandler
+from pywebdav.server.daemonize import startstop
 
 from pywebdav.lib.INI_Parse import Configuration
 from pywebdav.lib import VERSION, AUTHOR

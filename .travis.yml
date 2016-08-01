@@ -6,4 +6,4 @@ python:
 # install dependencies
 install: "pip install six"
 # run tests
-script: py.test
+script: py.test -v --capture=sys

@@ -6,4 +6,4 @@ python:
 # install dependencies
 install: "pip install ."
 # run tests
-script: nosetests
+script: py.test -v --capture=fd

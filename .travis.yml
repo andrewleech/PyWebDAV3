@@ -4,6 +4,6 @@ python:
   - "3.4"
   - "3.5"
 # install dependencies
-install: "pip install six"
+install: "pip install ."
 # run tests
 script: py.test -v --capture=sys

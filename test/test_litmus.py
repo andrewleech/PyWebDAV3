@@ -37,9 +37,9 @@ def test_run_litmus():
                 shutil.rmtree(litmus_dist)
             with tarfile.open(litmus_dist+'.tar.gz') as tf:
                 tf.extractall(path=testdir)
-            ret = subprocess.call('./configure', shell=True, cwd=litmus_dist)
+            ret = subprocess.call(['sh', './configure'], cwd=litmus_dist)
             assert ret == 0
-            ret = subprocess.call('make', shell=True, cwd=litmus_dist)
+            ret = subprocess.call(['make'], cwd=litmus_dist)
             assert ret == 0
             litmus = os.path.join(litmus_dist, 'litmus')
             assert os.path.exists(litmus)

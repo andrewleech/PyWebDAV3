@@ -1,4 +1,11 @@
 
+0.9.11 (August 3 2016)
+---------------------
+Added unit test to run litmus webdav testing suite.
+Added travis-ci job to run said test, but it has false positives. Runs locally correctly.
+Fixed a number of unicode issues from the python3 translation identified by the unit test.
+Still a number of litmus tests failing to do with props and file locking.
+
 0.9.10 (July 21 2016)
 ---------------------
 

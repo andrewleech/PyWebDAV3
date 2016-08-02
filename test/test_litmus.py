@@ -62,6 +62,7 @@ class Test(unittest.TestCase):
             # Run Litmus
             print('Running litmus')
             try:
+                ret = subprocess.call([self.litmus, 'http://localhost:%d' % port, user, password])
                 results = subprocess.check_output([self.litmus, 'http://localhost:%d' % port, user, password])
             except subprocess.CalledProcessError as ex:
                 results = ex.output
@@ -95,6 +96,7 @@ class Test(unittest.TestCase):
             # Run Litmus
             print('Running litmus')
             try:
+                ret = subprocess.call([self.litmus, 'http://localhost:%d' % port])
                 results = subprocess.check_output([self.litmus, 'http://localhost:%d' % port])
             except subprocess.CalledProcessError as ex:
                 results = ex.output

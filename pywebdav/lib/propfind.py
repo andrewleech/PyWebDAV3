@@ -35,7 +35,7 @@ class PROPFIND:
         self.default_ns = None
         self._dataclass = dataclass
         self._depth = str(depth)
-        self._uri = uri.rstrip('/')
+        self._uri = uri.rstrip(b'/')
         self._has_body = None   # did we parse a body?
 
         if dataclass.verbose:
@@ -246,7 +246,7 @@ class PROPFIND:
             uri = self._dataclass.baseurl + '/' + '/'.join(uri.split('/')[3:])
 
         # write href information
-        uparts = urllib.parse.urlparse(uri)
+        uparts = urllib.parse.urlparse(uri.decode())
         fileloc = uparts[2]
         href = doc.createElement("D:href")
 

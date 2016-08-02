@@ -172,7 +172,7 @@ def copytree(dc,src,dst,overwrite=None):
         # the actual source URI. -> actual_dst
         # ("subtract" the base src from the URI and prepend the
         # dst prefix to it.)
-        esrc=element.replace(src,"")
+        esrc=element.replace(src,b"")
         actual_dst=dpath+esrc
 
         # now copy stuff

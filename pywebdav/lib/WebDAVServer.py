@@ -6,7 +6,6 @@ This module builds on BaseHTTPServer and implements DAV commands
 from __future__ import absolute_import
 from . import AuthServer
 from six.moves import urllib
-import urllib.parse
 import logging
 
 from .propfind import PROPFIND

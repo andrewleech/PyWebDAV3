@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import six
 import logging
 import types
 import shutil
@@ -86,10 +87,9 @@ class FilesystemHandler(dav_interface):
 
     def uri2local(self,uri):
         """ map uri in baseuri and local part """
-
-        uparts=urllib.parse.urlparse(uri)
+        uparts=urllib.parse.urlparse(uri.decode())
         fileloc=uparts[2][1:]
-        filename=os.path.join(self.directory,fileloc)
+        filename=os.path.join(self.directory, fileloc)
         filename=os.path.normpath(filename)
         return filename
 
@@ -100,7 +100,7 @@ class FilesystemHandler(dav_interface):
         parts=filename.replace("\\","/").split("/")[pnum:]
         sparts="/"+"/".join(parts)
         uri=urllib.parse.urljoin(self.baseuri,sparts)
-        return uri
+        return uri.encode() if isinstance(uri, six.text_type) else uri
 
 
     def get_childs(self, uri, filter=None):

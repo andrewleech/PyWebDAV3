@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 import os
+import html
+import textwrap
 import six
 import logging
 import types
@@ -124,6 +126,27 @@ class FilesystemHandler(dav_interface):
 
         return filelist
 
+    def _get_listing(self, path):
+        """Return a directory listing similar to http.server's"""
+
+        template = textwrap.dedent("""
+            <html>
+                <head><title>Directory listing for {path}</title></head>
+                <body>
+                    <h1>Directory listing for {path}</h1>
+                    <hr>
+                    <ul>
+                    {items}
+                    </ul>
+                    <hr>
+                </body>
+            </html>
+            """)
+        escapeditems = (html.escape(i) + ('/' if os.path.isdir(os.path.join(path, i)) else '') for i in os.listdir(path) if not i.startswith('.'))
+        htmlitems = "\n".join('<li><a href="{i}">{i}</a></li>'.format(i=i) for i in escapeditems)
+
+        return template.format(items=htmlitems, path=path)
+
     def get_data(self,uri, range = None):
         """ return the content of an object """
 
@@ -157,8 +180,7 @@ class FilesystemHandler(dav_interface):
                     log.info('Serving range %s -> %s content of %s' % (range[0], range[1], uri))
                     return Resource(fp, range[1] - range[0])
             elif os.path.isdir(path):
-                # GET for collections is defined as 'return s/th meaningful' :-)
-                msg = 'Directory at %s' % uri
+                msg = self._get_listing(path)
                 return Resource(StringIO(msg), len(msg))
             else:
                 # also raise an error for collections

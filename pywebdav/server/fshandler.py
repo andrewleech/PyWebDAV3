@@ -132,7 +132,7 @@ class FilesystemHandler(dav_interface):
             if os.path.isfile(path):
                 file_size = os.path.getsize(path)
                 if range is None:
-                    fp=open(path,"r")
+                    fp=open(path,"rb")
                     log.info('Serving content of %s' % uri)
                     return Resource(fp, file_size)
                 else:
@@ -152,7 +152,7 @@ class FilesystemHandler(dav_interface):
                     if range[1] > file_size:
                         range[1] = file_size
 
-                    fp=open(path,"r")
+                    fp=open(path,"rb")
                     fp.seek(range[0])
                     log.info('Serving range %s -> %s content of %s' % (range[0], range[1], uri))
                     return Resource(fp, range[1] - range[0])

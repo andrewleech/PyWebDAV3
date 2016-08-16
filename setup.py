@@ -2,12 +2,12 @@
 
 from __future__ import absolute_import
 from setuptools import setup, find_packages
-from io import open
+import os
 
-VERSION = open('VERSION', 'r', encoding='utf-8').read()
-VERSION = VERSION.replace('\n', '')
+import pywebdav
 
-CHANGES = open('doc/Changes', 'r', encoding='utf-8').read()
+CHANGES = open(os.path.join(os.path.dirname(__file__), 'doc/Changes'),
+    'r', encoding='utf-8').read()
 
 DOC = """
 WebDAV library for python3.
@@ -62,15 +62,15 @@ Changes
 """ % CHANGES
 
 setup(name='PyWebDAV3',
-      description='WebDAV library including a standalone server for python3',
-      author='Simon Pamies (porting to 3 by Andrew Leech)',
-      author_email='spamsch@gmail.com (andrew@alelec.net)',
-      maintainer='Andrew Leech',
-      maintainer_email='andrew@alelec.net',
+      description=pywebdav.__doc__,
+      author=pywebdav.__author__,
+      author_email=pywebdav.__email__,
+      maintainer=pywebdav.__author__,
+      maintainer_email=pywebdav.__email__,
       url='https://github.com/andrewleech/PyWebDAV3',
       platforms=['Unix', 'Windows'],
-      license='LGPL v2',
-      version=VERSION,
+      license=pywebdav.__license__,
+      version=pywebdav.__version__,
       long_description=DOC,
       classifiers=[
         'Development Status :: 5 - Production/Stable',

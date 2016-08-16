@@ -134,6 +134,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         for a, v in headers.items():
             self.send_header(a, v)
 
+        GZDATA = None
         if DATA:
             if ('gzip' in self.headers.get('Accept-Encoding', '').split(',')
                 and len(DATA) > self.encode_threshold):
@@ -143,10 +144,11 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                     output.write(DATA)
                 else:
                     for buf in DATA:
+                        buf = buf.encode() if isinstance(buf, six.text_type) else buf
                         output.write(buf)
                 output.close()
                 buffer.seek(0)
-                DATA = buffer.getvalue()
+                GZDATA = buffer.getvalue()
                 self.send_header('Content-Encoding', 'gzip')
 
             self.send_header('Content-Length', len(DATA))
@@ -157,7 +159,10 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         self.end_headers()
 
-        if DATA:
+        if GZDATA:
+            self.wfile.write(GZDATA)
+
+        elif DATA:
             DATA = DATA.encode() if isinstance(DATA, six.text_type) else DATA
             if isinstance(DATA, six.binary_type):
                 self.wfile.write(b"%s\r\n" % hex(len(DATA))[2:].encode())

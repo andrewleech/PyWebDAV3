@@ -2,12 +2,12 @@
 
 from __future__ import absolute_import
 from setuptools import setup, find_packages
+from io import open
 import os
 
 import pywebdav
 
-CHANGES = open(os.path.join(os.path.dirname(__file__), 'doc/Changes'),
-    'r', encoding='utf-8').read()
+CHANGES = open(os.path.join(os.path.dirname(__file__), 'doc/Changes'), 'r', encoding='utf-8').read()
 
 DOC = """
 WebDAV library for python3.

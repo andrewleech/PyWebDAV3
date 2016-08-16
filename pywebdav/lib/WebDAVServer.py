@@ -232,7 +232,12 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         # get the content type
         try:
-            content_type = dc.get_prop(uri, "DAV:", "getcontenttype")
+            if uri.endswith(b'/'):
+                # we could do away with this very non-local workaround for
+                # _get_listing if the data could have a type attached
+                content_type = 'text/html;charset=utf-8'
+            else:
+                content_type = dc.get_prop(uri, "DAV:", "getcontenttype")
         except DAV_NotFound:
             content_type = "application/octet-stream"
 

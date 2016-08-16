@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from six.moves import urllib
-import urllib.parse
 
 from . import utils
 from .constants import COLLECTION, OBJECT, DAV_PROPS

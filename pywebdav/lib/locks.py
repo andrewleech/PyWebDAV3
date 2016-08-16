@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 import time
 from six.moves import urllib
-import urllib.parse
 import random
 
 import logging

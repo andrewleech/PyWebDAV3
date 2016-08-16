@@ -22,7 +22,7 @@ from .locks import LockManager
 import gzip
 import io
 
-from pywebdav.lib import VERSION
+from pywebdav import __version__
 
 from xml.parsers.expat import ExpatError
 import six
@@ -53,7 +53,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
     """
 
-    server_version = "DAV/" + VERSION
+    server_version = "DAV/" + __version__
     encode_threshold = 1400  # common MTU
 
     def send_body(self, DATA, code=None, msg=None, desc=None,

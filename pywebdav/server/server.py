@@ -31,7 +31,7 @@ from pywebdav.server.fshandler import FilesystemHandler
 from pywebdav.server.daemonize import startstop
 
 from pywebdav.lib.INI_Parse import Configuration
-from pywebdav.lib import VERSION, AUTHOR
+from pywebdav import __version__, __author__
 
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
@@ -157,7 +157,7 @@ Parameters:
     -h, --help      Show this screen
 
 Please send bug reports and feature requests to %s
-""" % (VERSION, AUTHOR)
+""" % (__version__, __author__)
 
 def setupDummyConfig(**kw):
 
@@ -329,9 +329,9 @@ def run():
         sys.exit(3)
 
     if daemonaction != 'stop':
-        log.info('Starting up PyWebDAV server (version %s)' % VERSION)
+        log.info('Starting up PyWebDAV server (version %s)' % __version__)
     else:
-        log.info('Stopping PyWebDAV server (version %s)' % VERSION)
+        log.info('Stopping PyWebDAV server (version %s)' % __version__)
 
     if not noauth and daemonaction not in ['status', 'stop']:
         if not user:

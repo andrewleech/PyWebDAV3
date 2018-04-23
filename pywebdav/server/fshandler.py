@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import os
-import html
 import textwrap
 import six
 import logging
@@ -12,6 +11,10 @@ from pywebdav.lib.constants import COLLECTION, OBJECT
 from pywebdav.lib.errors import *
 from pywebdav.lib.iface import *
 from pywebdav.lib.davcmd import copyone, copytree, moveone, movetree, delone, deltree
+if six.PY2:
+    from cgi import escape
+else:
+    from html import escape
 
 log = logging.getLogger(__name__)
 
@@ -142,7 +145,7 @@ class FilesystemHandler(dav_interface):
                 </body>
             </html>
             """)
-        escapeditems = (html.escape(i) + ('/' if os.path.isdir(os.path.join(path, i)) else '') for i in os.listdir(path) if not i.startswith('.'))
+        escapeditems = (escape(i) + ('/' if os.path.isdir(os.path.join(path, i)) else '') for i in os.listdir(path) if not i.startswith('.'))
         htmlitems = "\n".join('<li><a href="{i}">{i}</a></li>'.format(i=i) for i in escapeditems)
 
         return template.format(items=htmlitems, path=path)

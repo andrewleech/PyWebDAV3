@@ -152,7 +152,6 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                 self.send_header('Content-Encoding', 'gzip')
 
             self.send_header('Content-Length', len(DATA))
-            self.send_header('Content-Type', ctype)
 
         else:
             self.send_header('Content-Length', 0)

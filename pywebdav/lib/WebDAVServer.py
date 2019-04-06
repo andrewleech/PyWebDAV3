@@ -77,7 +77,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                     and len(DATA) > self.encode_threshold:
                 buffer = io.BytesIO()
                 output = gzip.GzipFile(mode='wb', fileobj=buffer)
-                if isinstance(DATA, str) or isinstance(DATA, six.text_type):
+                if isinstance(DATA, str) or isinstance(DATA, six.text_type) or isinstance(DATA, bytes):
                     output.write(DATA)
                 else:
                     for buf in DATA:
@@ -94,7 +94,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         self.end_headers()
         if DATA:
-            if isinstance(DATA, str) or isinstance(DATA, six.text_type):
+            if isinstance(DATA, str) or isinstance(DATA, six.text_type) or isinstance(DATA, bytes):
                 log.debug("Don't use iterator")
                 self.wfile.write(DATA)
             else:

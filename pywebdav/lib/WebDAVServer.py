@@ -73,28 +73,31 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
             self.send_header(a, v)
 
         if DATA:
-            if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
-                    and len(DATA) > self.encode_threshold:
-                buffer = io.BytesIO()
-                output = gzip.GzipFile(mode='wb', fileobj=buffer)
-                if isinstance(DATA, str) or isinstance(DATA, six.text_type):
-                    output.write(DATA)
-                else:
-                    for buf in DATA:
-                        output.write(buf)
-                output.close()
-                buffer.seek(0)
-                DATA = buffer.getvalue()
-                self.send_header('Content-Encoding', 'gzip')
+            try:
+                if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
+                        and len(DATA) > self.encode_threshold:
+                    buffer = io.BytesIO()
+                    output = gzip.GzipFile(mode='wb', fileobj=buffer)
+                    if isinstance(DATA, str) or isinstance(DATA, six.text_type):
+                        output.write(DATA)
+                    else:
+                        for buf in DATA:
+                            output.write(buf)
+                    output.close()
+                    buffer.seek(0)
+                    DATA = buffer.getvalue()
+                    self.send_header('Content-Encoding', 'gzip')
 
-            self.send_header('Content-Length', len(DATA))
-            self.send_header('Content-Type', ctype)
+                self.send_header('Content-Length', len(DATA))
+                self.send_header('Content-Type', ctype)
+            except:
+                pass
         else:
             self.send_header('Content-Length', 0)
 
         self.end_headers()
         if DATA:
-            if isinstance(DATA, str) or isinstance(DATA, six.text_type):
+            if isinstance(DATA, str) or isinstance(DATA, six.text_type)or isinstance(DATA, bytes):
                 log.debug("Don't use iterator")
                 self.wfile.write(DATA)
             else:
@@ -107,7 +110,11 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                 else:
                     # Don't use iterator, it's a compatibility option
                     log.debug("Don't use iterator")
-                    self.wfile.write(DATA.read())
+                    res = DATA.read()
+                    if isinstance(res,bytes):
+                        self.wfile.write(res)
+                    else:
+                        self.wfile.write(res.encode('utf8'))
         return None
 
     def send_body_chunks_if_http11(self, DATA, code, msg=None, desc=None,
@@ -152,6 +159,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                 self.send_header('Content-Encoding', 'gzip')
 
             self.send_header('Content-Length', len(DATA))
+            self.send_header('Content-Type', ctype)
 
         else:
             self.send_header('Content-Length', 0)

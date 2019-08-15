@@ -1,6 +1,18 @@
 
+0.9.12 (August 15 2019)
+-----------------------
+Fix responed data type error
+Fix exception when trying to list directory over WebDAV
+Don't send Content-Type header twice
+Fix python2 support
+Don't decode binary data on put 
+
+0.9.11 (October 29 2017)
+------------------------
+Allow running davserver as PyWebDAV server
+
 0.9.11 (August 3 2016)
----------------------
+----------------------
 Added unit test to run litmus webdav testing suite.
 Added travis-ci job to run said test, but it has false positives. Runs locally correctly.
 Fixed a number of unicode issues from the python3 translation identified by the unit test.
@@ -14,7 +26,7 @@ No other change in functionality
 [Andrew Leech]
 
 0.9.9 (July 8 2016)
----------------------
+-------------------
 
 Updated to support Python 3.
 No other change in functionality

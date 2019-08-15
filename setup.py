@@ -9,8 +9,9 @@ import pywebdav
 
 CHANGES = open(os.path.join(os.path.dirname(__file__), 'doc/Changes'), 'r', encoding='utf-8').read()
 
-DOC = """
-WebDAV library for python3.
+DOC = """\
+WebDAV library for python3
+==========================
 
 Consists of a *server* that is ready to run
 Serve and the DAV package that provides WebDAV server(!) functionality.

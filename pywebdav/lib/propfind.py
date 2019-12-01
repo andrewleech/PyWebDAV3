@@ -242,7 +242,7 @@ class PROPFIND:
             nsnum += 1
 
         if self._dataclass.baseurl:
-            uri = self._dataclass.baseurl + '/' + '/'.join(uri.split('/')[3:])
+            uri = self._dataclass.baseurl.encode() + b'/' + b'/'.join(uri.split(b'/')[3:])
 
         # write href information
         uparts = urllib.parse.urlparse(uri.decode())

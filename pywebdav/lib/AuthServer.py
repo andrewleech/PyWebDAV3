@@ -10,9 +10,9 @@ import binascii
 import six.moves.BaseHTTPServer
 
 
-DEFAULT_AUTH_ERROR_MESSAGE = b"""
+DEFAULT_AUTH_ERROR_MESSAGE = """
 <head>
-<title>%(code)d - %(message)b</title>
+<title>%(code)d - %(message)s</title>
 </head>
 <body>
 <h1>Authorization Required</h1>
@@ -26,7 +26,7 @@ the credentials required.
 
 
 def _quote_html(html):
-    return html.replace(b"&", b"&amp;").replace(b"<", b"&lt;").replace(b">", b"&gt;")
+    return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
@@ -48,7 +48,7 @@ class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
         if self.DO_AUTH:
             authorization = self.headers.get('Authorization', '')
             if not authorization:
-                self.send_autherror(401, b"Authorization Required")
+                self.send_autherror(401, "Authorization Required")
                 return False
             scheme, credentials = authorization.split()
             if scheme != 'Basic':
@@ -57,7 +57,7 @@ class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
             credentials = base64.decodebytes(credentials.encode()).decode()
             user, password = credentials.split(':')
             if not self.get_userinfo(user, password, self.command):
-                self.send_autherror(401, b"Authorization Required")
+                self.send_autherror(401, "Authorization Required")
                 return False
         return True
 
@@ -76,7 +76,7 @@ class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
         try:
             short, long = self.responses[code]
         except KeyError:
-            short, long = b'???', b'???'
+            short, long = '???', '???'
         if message is None:
             message = short
         explain = long
@@ -84,14 +84,14 @@ class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
 
         # using _quote_html to prevent Cross Site Scripting attacks (see bug
         # #1100201)
-        content = (self.error_auth_message_format % {b'code': code, b'message':
-                   _quote_html(message), b'explain': explain})
+        content = (self.error_auth_message_format % {'code': code, 'message':
+                   _quote_html(message), 'explain': explain})
         self.send_response(code, message)
         self.send_header('Content-Type', self.error_content_type)
         self.send_header('WWW-Authenticate', 'Basic realm="PyWebDAV"')
         self.send_header('Connection', 'close')
         self.end_headers()
-        self.wfile.write(content)
+        self.wfile.write(content.encode('utf-8'))
 
     error_auth_message_format = DEFAULT_AUTH_ERROR_MESSAGE
 

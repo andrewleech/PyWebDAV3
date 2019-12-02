@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import time
 from six.moves import urllib
-import random
+import uuid
 
 import logging
 
@@ -95,7 +95,7 @@ class LockManager:
         if self._l_isLocked(uri):
             self._l_delLock(token)
 
-        self.send_body(None, 204, 'Ok', 'Ok')
+        self.send_body(None, 204, 'OK', 'OK')
 
     def do_LOCK(self):
         """ Locking is implemented via in-memory caches. No data is written to disk.  """
@@ -194,9 +194,7 @@ class LockItem:
         return (modified + timeout) > now
 
     def generateToken(self):
-        _randGen = random.Random(time.time())
-        return '%s-%s-00105A989226:%.03f' %  \
-             (_randGen.random(),_randGen.random(),time.time())
+        return str(uuid.uuid4())
 
     def getTimeoutString(self):
         t = str(self.timeout)
@@ -211,7 +209,7 @@ class LockItem:
         owner_str = ''
         if isinstance(self.owner, str):
             owner_str = self.owner
-        elif isinstance(self.owner, xml.dom.minicompat.NodeList):
+        elif isinstance(self.owner, xml.dom.minicompat.NodeList) and len(self.owner) > 0:
             owner_str = "".join([node.toxml() for node in self.owner[0].childNodes])
 
         token = self.token

@@ -69,7 +69,6 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         self._send_dav_version()
 
         for a, v in headers.items():
-            v = v.encode() if isinstance(v, six.text_type) else v
             self.send_header(a, v)
 
         if DATA:
@@ -97,7 +96,9 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         self.end_headers()
         if DATA:
-            if isinstance(DATA, str) or isinstance(DATA, six.text_type) or isinstance(DATA, bytes):
+            if isinstance(DATA, str):
+                DATA = DATA.encode('utf-8')
+            if isinstance(DATA, six.text_type) or isinstance(DATA, bytes):
                 log.debug("Don't use iterator")
                 self.wfile.write(DATA)
             else:
@@ -224,8 +225,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         """ Returns headers and body for given resource """
 
         dc = self.IFACE_CLASS
-        uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
-        uri = urllib.parse.unquote(uri).encode()
+        uri = urllib.parse.unquote(urllib.parse.urljoin(self.get_baseuri(dc), self.path))
 
         headers = {}
 
@@ -244,7 +244,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         # get the content type
         try:
-            if uri.endswith(b'/'):
+            if uri.endswith('/'):
                 # we could do away with this very non-local workaround for
                 # _get_listing if the data could have a type attached
                 content_type = 'text/html;charset=utf-8'
@@ -331,8 +331,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
             l = self.headers['Content-Length']
             body = self.rfile.read(int(l))
 
-        uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
-        uri = urllib.parse.unquote(uri).encode()
+        uri = urllib.parse.unquote(urllib.parse.urljoin(self.get_baseuri(dc), self.path))
 
         try:
             pf = PROPFIND(uri, dc, self.headers.get('Depth', 'infinity'), body)
@@ -341,7 +340,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
             return self.send_status(400)
 
         try:
-            DATA = b'%s\n' % pf.createResponse()
+            DATA = pf.createResponse()
         except DAV_Error as error:
             (ec, dd) = error.args
             return self.send_status(ec)
@@ -376,8 +375,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
             l = self.headers['Content-Length']
             body = self.rfile.read(int(l))
 
-        uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
-        uri = urllib.parse.unquote(uri).encode()
+        uri = urllib.parse.unquote(urllib.parse.urljoin(self.get_baseuri(dc), self.path))
 
         rp = REPORT(uri, dc, self.headers.get('Depth', '0'), body)
 
@@ -403,8 +401,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
             return self.send_status(415)
 
         dc = self.IFACE_CLASS
-        uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
-        uri = urllib.parse.unquote(uri).encode()
+        uri = urllib.parse.unquote(urllib.parse.urljoin(self.get_baseuri(dc), self.path))
 
         try:
             dc.mkcol(uri)
@@ -419,11 +416,10 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         """ delete an resource """
 
         dc = self.IFACE_CLASS
-        uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
-        uri = urllib.parse.unquote(uri).encode()
+        uri = urllib.parse.unquote(urllib.parse.urljoin(self.get_baseuri(dc), self.path))
 
         # hastags not allowed
-        if uri.find(b'#') >= 0:
+        if uri.find('#') >= 0:
             return self.send_status(404)
 
         # locked resources are not allowed to delete
@@ -490,8 +486,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
     def do_PUT(self):
         dc = self.IFACE_CLASS
-        uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
-        uri = urllib.parse.unquote(uri).encode()
+        uri = urllib.parse.unquote(urllib.parse.urljoin(self.get_baseuri(dc), self.path))
 
         log.debug("do_PUT: uri = %s" % uri)
         log.debug('do_PUT: headers = %s' % self.headers)
@@ -677,12 +672,11 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         dc = self.IFACE_CLASS
 
         # get the source URI
-        source_uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
-        source_uri = urllib.parse.unquote(source_uri).encode()
+        source_uri = urllib.parse.unquote(urllib.parse.urljoin(self.get_baseuri(dc), self.path))
 
         # get the destination URI
         dest_uri = self.headers['Destination']
-        dest_uri = urllib.parse.unquote(dest_uri).encode()
+        dest_uri = urllib.parse.unquote(dest_uri)
 
         # check locks on source and dest
         if self._l_isLocked(source_uri) or self._l_isLocked(dest_uri):

@@ -55,7 +55,7 @@ class REPORT(PROPFIND):
                 if uri_childs:
                     uri_list.extend(uri_childs)
 
-        return doc.toxml(encoding="utf-8")
+        return doc.toxml(encoding="utf-8") + b"\n"
 
     def create_prop(self):
         """ handle a <prop> request
@@ -117,5 +117,5 @@ class REPORT(PROPFIND):
                 if uri_childs:
                     uri_list.extend(uri_childs)
 
-        return doc.toxml(encoding="utf-8")
+        return doc.toxml(encoding="utf-8") + b"\n"
 

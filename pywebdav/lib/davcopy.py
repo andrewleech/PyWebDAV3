@@ -99,4 +99,4 @@ class COPY:
                 re.appendChild(st)
                 ms.appendChild(re)
 
-        return doc.toxml(encoding="utf-8")
+        return doc.toxml(encoding="utf-8") + b"\n"

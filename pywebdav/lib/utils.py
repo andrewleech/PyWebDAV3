@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import time
 import re
+import os
 
 from xml.dom import minidom
 from six.moves import urllib
@@ -75,10 +76,9 @@ def create_treelist(dataclass,uri):
 
 def is_prefix(uri1,uri2):
     """ returns 1 of uri1 is a prefix of uri2 """
-    if uri2[:len(uri1)]==uri1:
-        return 1
-    else:
-        return None
+    path1 = urllib.parse.urlparse(uri1).path
+    path2 = urllib.parse.urlparse(uri2).path
+    return os.path.commonpath([path1, path2]) == path2
 
 def quote_uri(uri):
     """ quote an URL but not the protocol part """
@@ -122,7 +122,7 @@ def make_xmlresponse(result):
         re.appendChild(st)
         doc.documentElement.appendChild(re)
 
-    return doc.toxml(encoding="utf-8")
+    return doc.toxml(encoding="utf-8") + b"\n"
 
 # taken from App.Common
 

@@ -14,6 +14,7 @@ from six.moves import urllib
 from .utils import create_treelist, is_prefix
 from .errors import *
 from six.moves import range
+import os
 
 def deltree(dc,uri,exclude={}):
     """ delete a tree of resources
@@ -128,7 +129,7 @@ def copytree(dc,src,dst,overwrite=None):
     dc  -- dataclass to use
     src -- src uri from where to copy
     dst -- dst uri
-    overwrite -- if 1 then delete dst uri before
+    overwrite -- if True then delete dst uri before
 
     returns dict of uri:error_code tuples from which
     another method can create a multistatus xml element.
@@ -149,8 +150,14 @@ def copytree(dc,src,dst,overwrite=None):
     tlist = create_treelist(dc,src)
     result = {}
 
-    # prepare destination URIs (get the prefix)
-    dpath = urllib.parse.urlparse(dst)[2]
+    # Extract the path out of the source URI.
+    src_path = urllib.parse.urlparse(src).path
+
+    # Parse the destination URI.
+    # We'll be using it to construct destination URIs,
+    # so we don't just retain the path, like we did with
+    # the source.
+    dst_parsed = urllib.parse.urlparse(dst)
 
     for element in tlist:
         problem_uris = list(result.keys())
@@ -160,24 +167,34 @@ def copytree(dc,src,dst,overwrite=None):
         # able to copy in problem_uris which is the prefix
         # of the actual element. If it is, then we cannot
         # copy this as well but do not generate another error.
-        ok=1
+        ok=True
         for p in problem_uris:
             if is_prefix(p,element):
-                ok=None
+                ok=False
                 break
 
-        if not ok: continue
+        if not ok:
+            continue
 
-        # now create the destination URI which corresponds to
-        # the actual source URI. -> actual_dst
-        # ("subtract" the base src from the URI and prepend the
-        # dst prefix to it.)
-        esrc=element.replace(src,b"")
-        actual_dst=dpath+esrc
+        # Find the element's path relative to the source.
+        element_path = urllib.parse.urlparse(element).path
+        element_path_rel = os.path.relpath(element_path, start=src_path)
+        # Append this relative path to the destination.
+        if element_path_rel == '.':
+            # os.path.relpath("/somedir", start="/somedir") returns
+            # a result of ".", which we don't want to append to the
+            # destination path.
+            dst_path = dst_parsed.path
+        else:
+            dst_path = os.path.join(dst_parsed.path, element_path_rel)
+
+        # Generate destination URI using our derived destination path.
+        dst_uri = urllib.parse.urlunparse(dst_parsed._replace(path=os.path.join(dst_parsed.path, element_path_rel)))
+
 
         # now copy stuff
         try:
-            copy(dc,element,actual_dst)
+            copy(dc,element,dst_uri)
         except DAV_Error as error:
             (ec,dd) = error.args
             result[element]=ec
@@ -215,6 +232,11 @@ def movetree(dc,src,dst,overwrite=None):
 
     # first copy it
     res = copytree(dc,src,dst,overwrite)
+
+    # TODO: shouldn't we check res for errors and bail out before
+    # the delete if we find any?
+    # TODO: or, better yet, is there anything preventing us from
+    # reimplementing this using `shutil.move()`?
 
     # then delete it
     res = deltree(dc,src,exclude=res)

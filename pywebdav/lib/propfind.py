@@ -116,7 +116,7 @@ class PROPFIND:
                 if uri_childs:
                     uri_list.extend(uri_childs)
 
-        return doc.toxml(encoding="utf-8")
+        return doc.toxml(encoding="utf-8") + b"\n"
 
     def create_allprop(self):
         """ return a list of all properties """
@@ -180,7 +180,7 @@ class PROPFIND:
                 if uri_childs:
                     uri_list.extend(uri_childs)
 
-        return doc.toxml(encoding="utf-8")
+        return doc.toxml(encoding="utf-8") + b"\n"
 
     def mk_propname_response(self, uri, propnames, doc):
         """ make a new <prop> result element for a PROPNAME request

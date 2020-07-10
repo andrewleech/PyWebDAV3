@@ -5,7 +5,7 @@ from . import utils
 from .constants import COLLECTION, OBJECT, DAV_PROPS
 from .constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
 from .errors import *
-from .utils import create_treelist, quote_uri, gen_estring, make_xmlresponse
+from .utils import create_treelist, quote_uri, gen_estring, make_xmlresponse, is_prefix
 from .davcmd import moveone, movetree
 
 class MOVE:
@@ -65,7 +65,8 @@ class MOVE:
         # (we assume that both uris are on the same server!)
         ps=urllib.parse.urlparse(self.__src)[2]
         pd=urllib.parse.urlparse(self.__dst)[2]
-        if ps==pd: raise DAV_Error(403)
+        if is_prefix(ps, pd):
+            raise DAV_Error(403)
 
         result=dc.movetree(self.__src,self.__dst,self.__overwrite)
         if not result: return None

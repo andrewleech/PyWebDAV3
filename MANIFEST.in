@@ -1,4 +1,4 @@
-include setup.py README
+include setup.py README.md
 include doc/*
 include test/*
 include pywebdav/lib/*.py pywebdav/server/*.ini

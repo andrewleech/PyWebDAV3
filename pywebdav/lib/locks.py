@@ -95,7 +95,7 @@ class LockManager:
         if self._l_isLocked(uri):
             self._l_delLock(token)
 
-        self.send_body(None, '204', 'Ok', 'Ok')
+        self.send_body(None, 204, 'Ok', 'Ok')
 
     def do_LOCK(self):
         """ Locking is implemented via in-memory caches. No data is written to disk.  """
@@ -130,12 +130,12 @@ class LockManager:
             token, result = self._lock_unlock_create(uri, 'unknown', depth, data)
 
             if result:
-                self.send_body(result, '207', 'Error', 'Error',
+                self.send_body(bytes(result, 'utf-8'), 207, 'Error', 'Error',
                                 'text/xml; charset="utf-8"')
 
             else:
                 lock = self._l_getLock(token)
-                self.send_body(lock.asXML(), '200', 'OK', 'OK',
+                self.send_body(bytes(lock.asXML(), 'utf-8'), 200, 'OK', 'OK',
                                 'text/xml; charset="utf-8"',
                                 {'Lock-Token' : '<opaquelocktoken:%s>' % token})
 
@@ -153,8 +153,8 @@ class LockManager:
                         lock.setTimeout(timeout) # automatically refreshes
                         found = 1
 
-                        self.send_body(lock.asXML(), 
-                                        '200', 'OK', 'OK', 'text/xml; encoding="utf-8"')
+                        self.send_body(bytes(lock.asXML(), 'utf-8'),
+                                        200, 'OK', 'OK', 'text/xml; encoding="utf-8"')
                         break
                 if found: 
                     break

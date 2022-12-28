@@ -1,16 +1,36 @@
-PyWebDAV is a standards compliant WebDAV server and library written in Python
-This alternate package has been updated for python 3 support. It should still work with 2.7
+PyWebDAV3
+---------
 
-DESCRIPTION
------------
+PyWebDAV is a standards compliant WebDAV server and library written in Python
+
+PyWebDAV3 is an updated distribution for python 3 support.
 
 Python WebDAV implementation (level 1 and 2) that features a library that enables you
 to integrate WebDAV server capabilities to your application
 
 A fully working example on how to use the library is included. You can find the server in the DAVServer package. Upon installation a script called davserver is created in your $PYTHON/bin directory.
 
-If you search an easy to use WebDAV server that supports most clients (cadaver, Mac OS X Finder, Windows Explorer, ...) then try out PyWebDAV.
+DETAILS
+-------
 
+Consists of a *server* that is ready to run
+Serve and the DAV package that provides WebDAV server(!) functionality.
+
+Currently supports
+
+    * WebDAV level 1
+    * Level 2 (LOCK, UNLOCK)
+    * Experimental iterator support
+
+It plays nice with
+
+    * Mac OS X Finder
+    * Windows Explorer
+    * iCal
+    * cadaver
+    * Nautilus
+
+This package does *not* provide client functionality.
 
 INSTALLATION
 ------------
@@ -19,6 +39,10 @@ Installation and setup of server can be as easy as follows:
 
 $ pip install PyWebDAV3
 $ davserver -D /tmp -n -J
+
+After installation of this package you will have a new script in you
+$PYTHON/bin directory called *davserver*. This serves as the main entry point
+to the server.
 
 If you're living on the bleeding edge then check out the sourcecode from
 https://github.com/andrewleech/PyWebDAV3
@@ -46,7 +70,7 @@ or send an email to the maintainer.
 REQUIREMENTS
 ------------
 
-- Python 2.7  or higher (www.python.org)
+- Python 3.5  or higher (www.python.org)
 - PyXML 0.66 (pyxml.sourceforge.net)
 
 

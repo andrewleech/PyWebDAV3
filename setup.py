@@ -7,60 +7,7 @@ import os
 
 import pywebdav
 
-CHANGES = open(os.path.join(os.path.dirname(__file__), 'doc/Changes'), 'r', encoding='utf-8').read()
-
-DOC = """\
-WebDAV library for python3
-==========================
-
-Consists of a *server* that is ready to run
-Serve and the DAV package that provides WebDAV server(!) functionality.
-
-Currently supports
-
-    * WebDAV level 1
-    * Level 2 (LOCK, UNLOCK)
-    * Experimental iterator support
-
-It plays nice with
-
-    * Mac OS X Finder
-    * Windows Explorer
-    * iCal
-    * cadaver
-    * Nautilus
-
-This package does *not* provide client functionality.
-
-Installation
-============
-
-After installation of this package you will have a new script in you
-$PYTHON/bin directory called *davserver*. This serves as the main entry point
-to the server.
-
-Examples
-========
-
-Example (using pip)::
-
-    pip install PyWebDAV3
-    davserver -D /tmp -n
-
-Example (unpacking file locally)::
-
-    tar xvzf PyWebDAV3-$VERSION.tar.gz
-    cd pywebdav
-    python setup.py develop
-    davserver -D /tmp -n
-
-For more information: https://github.com/andrewleech/PyWebDAV3
-
-Changes
-=======
-
-%s
-""" % CHANGES
+README = open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r', encoding='utf-8').read()
 
 setup(name='PyWebDAV3',
       description=pywebdav.__doc__,
@@ -72,7 +19,7 @@ setup(name='PyWebDAV3',
       platforms=['Unix', 'Windows'],
       license=pywebdav.__license__,
       version=pywebdav.__version__,
-      long_description=DOC,
+      long_description=README,
       classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',

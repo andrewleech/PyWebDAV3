@@ -15,6 +15,7 @@ setup(name='PyWebDAV3',
       author_email=pywebdav.__email__,
       maintainer=pywebdav.__author__,
       maintainer_email=pywebdav.__email__,
+      use_git_versioner="gitlab:desc:snapshot",
       url='https://github.com/andrewleech/PyWebDAV3',
       platforms=['Unix', 'Windows'],
       license=pywebdav.__license__,
@@ -43,9 +44,9 @@ setup(name='PyWebDAV3',
                 'rfc 2518'
                 ],
       packages=find_packages(),
-      zip_safe=False,
       entry_points={
         'console_scripts': ['davserver = pywebdav.server.server:run']
         },
-      install_requires = ['six']
+      install_requires = ['six'],
+      setup_requires=['git-versioner'],
       )

@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 import unittest
 import subprocess
+from subprocess import run
 
 testdir = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(testdir, '..'))
@@ -27,20 +28,20 @@ class Test(unittest.TestCase):
 
     def _ensure_litmus(self):
 
-        litmus_dist = os.path.join(testdir, 'litmus-0.13')
-        self.litmus = os.path.join(litmus_dist, 'litmus')
+        self.litmus_dist = os.path.join(testdir, 'litmus-0.13')
+        self.litmus = os.path.join(self.litmus_dist, 'litmus')
         if not os.path.exists(self.litmus):
             print('Compiling litmus test suite')
 
-            if os.path.exists(litmus_dist):
-                shutil.rmtree(litmus_dist)
-            with tarfile.open(litmus_dist + '.tar.gz') as tf:
+            if os.path.exists(self.litmus_dist):
+                shutil.rmtree(self.litmus_dist)
+            with tarfile.open(self.litmus_dist + '.tar.gz') as tf:
                 tf.extractall(path=testdir)
-            ret = subprocess.call(['sh', './configure'], cwd=litmus_dist)
+            ret = run(['sh', './configure'], cwd=self.litmus_dist)
             # assert ret == 0
-            ret = subprocess.call(['make'], cwd=litmus_dist)
+            ret = run(['make'], cwd=self.litmus_dist)
             # assert ret == 0
-            litmus = os.path.join(litmus_dist, 'litmus')
+            litmus = os.path.join(self.litmus_dist, 'litmus')
             # assert os.path.exists(litmus)
 
     def tearDown(self):
@@ -62,8 +63,8 @@ class Test(unittest.TestCase):
             # Run Litmus
             print('Running litmus')
             try:
-                ret = subprocess.call([self.litmus, 'http://localhost:%d' % port, user, password])
-                results = subprocess.check_output([self.litmus, 'http://localhost:%d' % port, user, password])
+                ret = run(["make", "URL=http://localhost:%d" % port, 'CREDS="%s %s"' % (user, password), "check"], cwd=self.litmus_dist, capture_output=True)
+                results = ret.stdout
             except subprocess.CalledProcessError as ex:
                 results = ex.output
             lines = results.decode().split('\n')
@@ -96,8 +97,9 @@ class Test(unittest.TestCase):
             # Run Litmus
             print('Running litmus')
             try:
-                ret = subprocess.call([self.litmus, 'http://localhost:%d' % port])
-                results = subprocess.check_output([self.litmus, 'http://localhost:%d' % port])
+                ret = run(["make", "URL=http://localhost:%d" % port, "check"], cwd=self.litmus_dist, capture_output=True)
+                results = ret.stdout
+                
             except subprocess.CalledProcessError as ex:
                 results = ex.output
             lines = results.decode().split('\n')
@@ -113,3 +115,7 @@ class Test(unittest.TestCase):
 
             print('Stopping davserver')
             self.davserver_proc.kill()
+            
+if __name__ == "__main__":
+    unittest.main()
+    

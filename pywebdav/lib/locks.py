@@ -156,7 +156,7 @@ class LockManager:
                         self.send_body(bytes(lock.asXML(), 'utf-8'),
                                         200, 'OK', 'OK', 'text/xml; encoding="utf-8"')
                         break
-                if found: 
+                if found:
                     break
 
             # we didn't find any of the tokens mentioned - means
@@ -209,7 +209,7 @@ class LockItem:
         owner_str = ''
         if isinstance(self.owner, str):
             owner_str = self.owner
-        elif isinstance(self.owner, xml.dom.minicompat.NodeList) and len(self.owner) > 0:
+        elif isinstance(self.owner, xml.dom.minicompat.NodeList) and len(self.owner):
             owner_str = "".join([node.toxml() for node in self.owner[0].childNodes])
 
         token = self.token

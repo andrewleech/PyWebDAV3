@@ -17,8 +17,8 @@ def gen_estring(ecode):
         return "HTTP/1.1 %s" %(ec)
 
 def parse_propfind(xml_doc):
-    """ 
-    Parse an propfind xml file and return a list of props 
+    """
+    Parse an propfind xml file and return a list of props
     """
 
     doc = minidom.parseString(xml_doc)
@@ -49,7 +49,7 @@ def parse_propfind(xml_doc):
 
 
 def create_treelist(dataclass,uri):
-    """ create a list of resources out of a tree 
+    """ create a list of resources out of a tree
 
     This function is used for the COPY, MOVE and DELETE methods
 
@@ -75,7 +75,7 @@ def create_treelist(dataclass,uri):
     return list
 
 def is_prefix(uri1,uri2):
-    """ returns 1 if uri1 is a prefix of uri2 """
+    """ returns True if uri1 is a prefix of uri2 """
     path1 = urllib.parse.urlparse(uri1).path
     path2 = urllib.parse.urlparse(uri2).path
     return os.path.commonpath([path1, path2]) == path1

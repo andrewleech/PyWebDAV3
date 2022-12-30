@@ -585,7 +585,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
             content_type = self.headers['Content-Type']
 
         headers = {}
-        headers['Location'] = uri
+        headers['Location'] = urllib.parse.quote(uri)
 
         try:
             etag = dc.get_prop(uri, "DAV:", "getetag")

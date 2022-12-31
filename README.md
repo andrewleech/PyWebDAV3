@@ -61,7 +61,7 @@ holds all code for a full blown server. Also doc/ARCHITECURE has information for
 
 
 QUESTIONS?
----------
+----------
 
 Ask here https://github.com/andrewleech/PyWebDAV3
 or send an email to the maintainer.
@@ -82,7 +82,7 @@ see doc/LICENSE
 
 
 AUTHOR(s)
-------
+---------
 
 Andrew Leech [*]
 Melbourne, Australia
@@ -115,6 +115,6 @@ NOTES
 -----
 
 Look inside the file doc/TODO for things which needs to be done and may be done
-in the near future. 
+in the near future.
 
 Have a look at doc/ARCHITECTURE to understand what's going on under the hood

@@ -56,6 +56,59 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
     server_version = "DAV/" + __version__
     encode_threshold = 1400  # common MTU
 
+    def data_to_bytes_iterator(self, data):
+        if isinstance(data, (six.string_types, six.binary_type)):
+            log.debug("Not using iterator, string type")
+            data = (data,)
+        elif self._config.DAV.getboolean('http_response_use_iterator'):
+            # Use iterator to reduce using memory
+            log.debug("Use iterator")
+        else:
+            # Don't use iterator, it's a compatibility option
+            data = (data.read(),)
+            log.debug("Don't use iterator")
+
+        for buf in data:
+            yield buf if isinstance(buf, six.binary_type) else str(buf).encode('utf-8')
+
+    def send_body_encoded(self, headers, data, content_type):
+        self.send_header('Date', rfc1123_date())
+        self._send_dav_version()
+
+        for a, v in headers.items():
+            self.send_header(a, v)
+
+        if not data:
+            self.send_header('Content-Length', "0")
+            self.end_headers()
+            return True
+
+        try:
+            is_gzip = ('gzip' in self.headers.get('Accept-Encoding', '').split(',')
+                       and len(data) > self.encode_threshold)
+            if is_gzip:
+                buffer = io.BytesIO()
+                output = gzip.GzipFile(mode='wb', fileobj=buffer)
+                for buf in self.data_to_bytes_iterator(data):
+                    output.write(buf)
+                output.close()
+                buffer.seek(0)
+                data = buffer.getvalue()
+        except Exception as ex:
+            is_gzip = False
+            log.exception(ex)
+
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Content-Type', content_type)
+
+        if is_gzip:
+            self.send_header('Content-Encoding', 'gzip')
+            self.end_headers()
+            if data:
+                self.wfile.write(data)
+
+        return is_gzip
+
     def send_body(self, DATA, code=None, msg=None, desc=None,
                   ctype='application/octet-stream', headers={}):
         """ send a body in one part """
@@ -64,59 +117,12 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         self.send_response(code, message=msg)
         self.send_header("Connection", "close")
         self.send_header("Accept-Ranges", "bytes")
-        self.send_header('Date', rfc1123_date())
 
-        self._send_dav_version()
-
-        for a, v in headers.items():
-            self.send_header(a, v)
-
-        if DATA:
-            try:
-                if 'gzip' in self.headers.get('Accept-Encoding', '').split(',') \
-                        and len(DATA) > self.encode_threshold:
-                    buffer = io.BytesIO()
-                    output = gzip.GzipFile(mode='wb', fileobj=buffer)
-                    if isinstance(DATA, str) or isinstance(DATA, six.text_type):
-                        output.write(DATA)
-                    else:
-                        for buf in DATA:
-                            output.write(buf)
-                    output.close()
-                    buffer.seek(0)
-                    DATA = buffer.getvalue()
-                    self.send_header('Content-Encoding', 'gzip')
-
-                self.send_header('Content-Length', len(DATA))
-                self.send_header('Content-Type', ctype)
-            except Exception as ex:
-                log.exception(ex)
-        else:
-            self.send_header('Content-Length', 0)
-
-        self.end_headers()
-        if DATA:
-            if isinstance(DATA, str):
-                DATA = DATA.encode('utf-8')
-            if isinstance(DATA, six.text_type) or isinstance(DATA, bytes):
-                log.debug("Don't use iterator")
-                self.wfile.write(DATA)
-            else:
-                if self._config.DAV.getboolean('http_response_use_iterator'):
-                    # Use iterator to reduce using memory
-                    log.debug("Use iterator")
-                    for buf in DATA:
-                        self.wfile.write(buf)
-                        self.wfile.flush()
-                else:
-                    # Don't use iterator, it's a compatibility option
-                    log.debug("Don't use iterator")
-                    res = DATA.read()
-                    if isinstance(res,bytes):
-                        self.wfile.write(res)
-                    else:
-                        self.wfile.write(res.encode('utf8'))
-        return None
+        if not self.send_body_encoded(headers, DATA, ctype):
+            self.end_headers()
+            for buf in self.data_to_bytes_iterator(DATA):
+                self.wfile.write(buf)
+                self.wfile.flush()
 
     def send_body_chunks_if_http11(self, DATA, code, msg=None, desc=None,
                                    ctype='text/xml; encoding="utf-8"',
@@ -133,69 +139,18 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         self.responses[207] = (msg, desc)
         self.send_response(code, message=msg)
-        self.send_header("Content-type", ctype)
-        self.send_header("Transfer-Encoding", "chunked")
-        self.send_header('Date', rfc1123_date())
 
-        self._send_dav_version()
+        if not self.send_body_encoded(headers, DATA, ctype):
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
 
-        for a, v in headers.items():
-            self.send_header(a, v)
-
-        GZDATA = None
-        if DATA:
-            if ('gzip' in self.headers.get('Accept-Encoding', '').split(',')
-                and len(DATA) > self.encode_threshold):
-                buffer = io.BytesIO()
-                output = gzip.GzipFile(mode='wb', fileobj=buffer)
-                if isinstance(DATA, bytes):
-                    output.write(DATA)
-                else:
-                    for buf in DATA:
-                        buf = buf.encode() if isinstance(buf, six.text_type) else buf
-                        output.write(buf)
-                output.close()
-                buffer.seek(0)
-                GZDATA = buffer.getvalue()
-                self.send_header('Content-Encoding', 'gzip')
-
-            self.send_header('Content-Length', len(DATA))
-            self.send_header('Content-Type', ctype)
-
-        else:
-            self.send_header('Content-Length', 0)
-
-        self.end_headers()
-
-        if GZDATA:
-            self.wfile.write(GZDATA)
-
-        elif DATA:
-            DATA = DATA.encode() if isinstance(DATA, six.text_type) else DATA
-            if isinstance(DATA, six.binary_type):
-                self.wfile.write(b"%s\r\n" % hex(len(DATA))[2:].encode())
-                self.wfile.write(DATA)
+            for buf in self.data_to_bytes_iterator(DATA):
+                self.wfile.write(b"%x\r\n" % len(buf))
+                self.wfile.write(buf)
                 self.wfile.write(b"\r\n")
-                self.wfile.write(b"0\r\n")
-                self.wfile.write(b"\r\n")
-            else:
-                if self._config.DAV.getboolean('http_response_use_iterator'):
-                    # Use iterator to reduce using memory
-                    for buf in DATA:
-                        buf = buf.encode() if isinstance(buf, six.text_type) else buf
-                        self.wfile.write((hex(len(buf))[2:] + "\r\n").encode())
-                        self.wfile.write(buf)
-                        self.wfile.write(b"\r\n")
 
-                    self.wfile.write(b"0\r\n")
-                    self.wfile.write(b"\r\n")
-                else:
-                    # Don't use iterator, it's a compatibility option
-                    self.wfile.write((hex(len(DATA))[2:] + "\r\n").encode())
-                    self.wfile.write(DATA.read())
-                    self.wfile.write(b"\r\n")
-                    self.wfile.write(b"0\r\n")
-                    self.wfile.write(b"\r\n")
+            self.wfile.write(b"0\r\n")
+            self.wfile.write(b"\r\n")
 
     def _send_dav_version(self):
         if self._config.DAV.getboolean('lockemulation'):

@@ -205,6 +205,8 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                 content_type = 'text/html;charset=utf-8'
             else:
                 content_type = dc.get_prop(uri, "DAV:", "getcontenttype")
+                if content_type == 'httpd/unix-directory':
+                    content_type = 'text/html;charset=utf-8'
         except DAV_NotFound:
             content_type = "application/octet-stream"
 

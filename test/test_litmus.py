@@ -72,7 +72,7 @@ class Test(unittest.TestCase):
             for line in lines:
                 line = line.split('\r')[-1]
                 result.append(line)
-                if len(re.findall('^ *\d+\.', line)):
+                if len(re.findall(r'^ *\d+\.', line)):
                     assert line.endswith('pass'), line
 
         finally:
@@ -107,7 +107,7 @@ class Test(unittest.TestCase):
             for line in lines:
                 line = line.split('\r')[-1]
                 result.append(line)
-                if len(re.findall('^ *\d+\.', line)):
+                if len(re.findall(r'^ *\d+\.', line)):
                     assert line.endswith('pass'), line
 
         finally:

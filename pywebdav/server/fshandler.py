@@ -18,7 +18,7 @@ else:
 
 log = logging.getLogger(__name__)
 
-BUFFER_SIZE = 128 * 1000 
+BUFFER_SIZE = 128 * 1000
 # include magic support to correctly determine mimetypes
 MAGIC_AVAILABLE = False
 try:
@@ -53,10 +53,10 @@ class Resource(object):
 
         data = self.__fp.read(length)
         return data
-        
+
 
 class FilesystemHandler(dav_interface):
-    """ 
+    """
     Model a filesystem for DAV
 
     This class models a regular filesystem for the DAV server
@@ -227,7 +227,7 @@ class FilesystemHandler(dav_interface):
         raise DAV_NotFound
 
     def get_creationdate(self,uri):
-        """ return the last modified date of the object """
+        """ return the creation date of the object """
         path=self.uri2local(uri)
         if os.path.exists(path):
             s=os.stat(path)
@@ -319,7 +319,7 @@ class FilesystemHandler(dav_interface):
             shutil.rmtree(path)
         except OSError:
             raise DAV_Forbidden # forbidden
-        
+
         return 204
 
     def rm(self,uri):
@@ -353,7 +353,7 @@ class FilesystemHandler(dav_interface):
         return delone(self,uri)
 
     def deltree(self,uri):
-        """ delete a collection 
+        """ delete a collection
 
         You have to return a result dict of the form
         uri:error_code

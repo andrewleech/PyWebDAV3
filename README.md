@@ -37,8 +37,10 @@ INSTALLATION
 
 Installation and setup of server can be as easy as follows:
 
-$ pip install PyWebDAV3
-$ davserver -D /tmp -n -J
+```sh
+pip install PyWebDAV3
+davserver -D /tmp -n -J
+```
 
 After installation of this package you will have a new script in you
 $PYTHON/bin directory called *davserver*. This serves as the main entry point
@@ -49,10 +51,12 @@ https://github.com/andrewleech/PyWebDAV3
 
 After having downloaded code simply install a development egg:
 
-$ git clone https://github.com/andrewleech/PyWebDAV3
-$ cd PyWebDAV3
-$ python setup.py develop
-$ davserver --help
+```sh
+git clone https://github.com/andrewleech/PyWebDAV3
+cd PyWebDAV3
+python setup.py develop
+davserver --help
+```
 
 Any updates, fork and pull requests against my github page
 

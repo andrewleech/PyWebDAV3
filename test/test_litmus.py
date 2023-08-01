@@ -63,7 +63,7 @@ class Test(unittest.TestCase):
             # Run Litmus
             print('Running litmus')
             try:
-                ret = run(["make", "URL=http://localhost:%d" % port, 'CREDS="%s %s"' % (user, password), "check"], cwd=self.litmus_dist, capture_output=True)
+                ret = run(["make", "URL=http://localhost:%d" % port, 'CREDS=%s %s' % (user, password), "check"], cwd=self.litmus_dist, capture_output=True)
                 results = ret.stdout
             except subprocess.CalledProcessError as ex:
                 results = ex.output

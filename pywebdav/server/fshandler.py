@@ -68,6 +68,7 @@ class FilesystemHandler(dav_interface):
     to /tmp/gfx/pix
 
     """
+    index_files = ()
 
     def __init__(self, directory, uri, verbose=False):
         self.setDirectory(directory)
@@ -155,6 +156,16 @@ class FilesystemHandler(dav_interface):
 
         path=self.uri2local(uri)
         if os.path.exists(path):
+            if os.path.isdir(path):
+                for filename in self.index_files:
+                    new_path = os.path.join(path, filename)
+                    if os.path.isfile(new_path):
+                        path = new_path
+                        break
+                else:
+                    msg = self._get_listing(path)
+                    return Resource(StringIO(msg), len(msg))
+
             if os.path.isfile(path):
                 file_size = os.path.getsize(path)
                 if range is None:
@@ -182,9 +193,6 @@ class FilesystemHandler(dav_interface):
                     fp.seek(range[0])
                     log.info('Serving range %s -> %s content of %s' % (range[0], range[1], uri))
                     return Resource(fp, range[1] - range[0])
-            elif os.path.isdir(path):
-                msg = self._get_listing(path)
-                return Resource(StringIO(msg), len(msg))
             else:
                 # also raise an error for collections
                 # don't know what should happen then..

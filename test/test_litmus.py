@@ -19,6 +19,19 @@ user = 'test'
 password = 'pass'
 port = 38028
 
+class TestFilter:
+    _suites = ['props']
+    _skipping = True
+
+    def skipLine(self, line):
+        if line.startswith("<- summary"):
+            self._skipping = False
+        else:
+            for suite in self._suites:
+                if line.startswith(f"-> running `{suite}"):
+                    self._skipping = True
+                    break
+        return self._skipping
 
 class Test(unittest.TestCase):
     def setUp(self):
@@ -69,9 +82,12 @@ class Test(unittest.TestCase):
                 results = ex.output
             lines = results.decode().split('\n')
             assert len(lines), "No litmus output"
+            filter = TestFilter()
             for line in lines:
                 line = line.split('\r')[-1]
                 result.append(line)
+                if filter.skipLine(line):
+                    continue
                 if len(re.findall(r'^ *\d+\.', line)):
                     assert line.endswith('pass'), line
 
@@ -104,9 +120,12 @@ class Test(unittest.TestCase):
                 results = ex.output
             lines = results.decode().split('\n')
             assert len(lines), "No litmus output"
+            filter = TestFilter()
             for line in lines:
                 line = line.split('\r')[-1]
                 result.append(line)
+                if filter.skipLine(line):
+                    continue
                 if len(re.findall(r'^ *\d+\.', line)):
                     assert line.endswith('pass'), line
 

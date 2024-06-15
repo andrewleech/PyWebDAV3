@@ -1,7 +1,5 @@
-from __future__ import absolute_import
 import os
 import textwrap
-import six
 import logging
 import types
 import shutil
@@ -11,10 +9,7 @@ from pywebdav.lib.constants import COLLECTION, OBJECT
 from pywebdav.lib.errors import *
 from pywebdav.lib.iface import *
 from pywebdav.lib.davcmd import copyone, copytree, moveone, movetree, delone, deltree
-if six.PY2:
-    from cgi import escape
-else:
-    from html import escape
+from html import escape
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +24,7 @@ except ImportError:
     log.info('Mimetype support DISABLED')
     pass
 
-class Resource(object):
+class Resource:
     # XXX this class is ugly
     def __init__(self, fp, file_size):
         self.__fp = fp

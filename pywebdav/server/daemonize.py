@@ -41,8 +41,6 @@
       
       http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/66012
 '''
-from __future__ import absolute_import
-from __future__ import print_function
 import sys, os, time
 from signal import SIGTERM
 

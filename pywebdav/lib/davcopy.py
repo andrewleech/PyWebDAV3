@@ -1,8 +1,6 @@
-from __future__ import absolute_import
 import xml.dom.minidom
 domimpl = xml.dom.minidom.getDOMImplementation()
 
-import sys
 import string
 from six.moves import urllib
 from io import StringIO

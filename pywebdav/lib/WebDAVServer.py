@@ -3,7 +3,6 @@
 This module builds on BaseHTTPServer and implements DAV commands
 
 """
-from __future__ import absolute_import
 from . import AuthServer
 from six.moves import urllib
 import logging
@@ -25,7 +24,6 @@ import io
 from pywebdav import __version__
 
 from xml.parsers.expat import ExpatError
-import six
 
 log = logging.getLogger(__name__)
 
@@ -77,7 +75,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                         and len(DATA) > self.encode_threshold:
                     buffer = io.BytesIO()
                     output = gzip.GzipFile(mode='wb', fileobj=buffer)
-                    if isinstance(DATA, str) or isinstance(DATA, six.text_type):
+                    if isinstance(DATA, str):
                         output.write(DATA)
                     else:
                         for buf in DATA:
@@ -98,7 +96,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         if DATA:
             if isinstance(DATA, str):
                 DATA = DATA.encode('utf-8')
-            if isinstance(DATA, six.text_type) or isinstance(DATA, bytes):
+            if isinstance(DATA, str) or isinstance(DATA, bytes):
                 log.debug("Don't use iterator")
                 self.wfile.write(DATA)
             else:
@@ -152,7 +150,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                     output.write(DATA)
                 else:
                     for buf in DATA:
-                        buf = buf.encode() if isinstance(buf, six.text_type) else buf
+                        buf = buf.encode() if isinstance(buf, str) else buf
                         output.write(buf)
                 output.close()
                 buffer.seek(0)
@@ -171,8 +169,8 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
             self.wfile.write(GZDATA)
 
         elif DATA:
-            DATA = DATA.encode() if isinstance(DATA, six.text_type) else DATA
-            if isinstance(DATA, six.binary_type):
+            DATA = DATA.encode() if isinstance(DATA, str) else DATA
+            if isinstance(DATA, bytes):
                 self.wfile.write(b"%s\r\n" % hex(len(DATA))[2:].encode())
                 self.wfile.write(DATA)
                 self.wfile.write(b"\r\n")
@@ -182,7 +180,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                 if self._config.DAV.getboolean('http_response_use_iterator'):
                     # Use iterator to reduce using memory
                     for buf in DATA:
-                        buf = buf.encode() if isinstance(buf, six.text_type) else buf
+                        buf = buf.encode() if isinstance(buf, str) else buf
                         self.wfile.write((hex(len(buf))[2:] + "\r\n").encode())
                         self.wfile.write(buf)
                         self.wfile.write(b"\r\n")
@@ -273,7 +271,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         if with_body is False:
             data = None
 
-        if isinstance(data, str) or isinstance(data, six.text_type):
+        if isinstance(data, str):
             self.send_body(data, status_code, None, None, content_type,
                            headers)
         else:

@@ -4,7 +4,6 @@ This module builds on BaseHTTPServer and implements basic authentication
 
 """
 
-from __future__ import absolute_import
 import base64
 import binascii
 import six.moves.BaseHTTPServer

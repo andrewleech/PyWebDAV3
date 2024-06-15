@@ -22,8 +22,6 @@ This is an example implementation of a DAVserver using the DAV package.
 
 """
 
-from __future__ import absolute_import
-import sys
 import logging
 
 from pywebdav.lib.WebDAVServer import DAVRequestHandler

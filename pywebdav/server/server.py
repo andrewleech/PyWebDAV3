@@ -7,8 +7,6 @@ This is an example implementation of a DAVserver using the DAV package.
 
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
 import getopt, sys, os
 import logging
 

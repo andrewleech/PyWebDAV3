@@ -1,9 +1,4 @@
-from __future__ import absolute_import
-from __future__ import print_function
-try:
-    from configparser import ConfigParser
-except ImportError:
-    from six.moves.configparser import SafeConfigParser as ConfigParser
+from configparser import ConfigParser
 
 class Configuration:
     def __init__(self, fileName):

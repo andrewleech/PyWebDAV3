@@ -8,7 +8,6 @@ resources and collections
 
 """
 
-from __future__ import absolute_import
 from six.moves import urllib
 
 from .utils import create_treelist, is_prefix

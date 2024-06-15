@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from .utils import gen_estring, quote_uri, make_xmlresponse
 from .davcmd import deltree
 

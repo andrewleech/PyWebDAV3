@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import logging
 
 log = logging.getLogger(__name__)
@@ -9,7 +8,6 @@ except ImportError:
     log.info('No SQL support - MySQLdb missing...')
     pass
 
-import sys
 
 class Mconn:
     def connect(self,username,userpasswd,host,port,db):

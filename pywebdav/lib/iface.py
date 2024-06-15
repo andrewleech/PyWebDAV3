@@ -7,7 +7,6 @@ class.
 
 """
 
-from __future__ import absolute_import
 from xml.dom import minidom
 from .locks import LockManager
 from .errors import *

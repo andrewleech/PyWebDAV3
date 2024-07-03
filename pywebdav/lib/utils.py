@@ -3,7 +3,8 @@ import re
 import os
 
 from xml.dom import minidom
-from six.moves import urllib
+import urllib.parse
+
 from .constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler
 

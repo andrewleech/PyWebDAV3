@@ -4,10 +4,10 @@ import logging
 import types
 import shutil
 from io import StringIO
-from six.moves import urllib
+import urllib.parse
 from pywebdav.lib.constants import COLLECTION, OBJECT
-from pywebdav.lib.errors import *
-from pywebdav.lib.iface import *
+from pywebdav.lib.errors import DAV_Error, DAV_Forbidden, DAV_NotFound
+from pywebdav.lib.iface import DAV_Requested_Range_Not_Satisfiable, DAV_Secret
 from pywebdav.lib.davcmd import copyone, copytree, moveone, movetree, delone, deltree
 from html import escape
 

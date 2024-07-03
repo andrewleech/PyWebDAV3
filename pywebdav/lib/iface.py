@@ -9,7 +9,7 @@ class.
 
 from xml.dom import minidom
 from .locks import LockManager
-from .errors import *
+from .errors import DAV_Forbidden, DAV_NotFound
 
 import time
 

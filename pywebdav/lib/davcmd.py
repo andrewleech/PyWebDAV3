@@ -8,7 +8,7 @@ resources and collections
 
 """
 
-import urllib.parser
+import urllib.parse
 
 from .utils import create_treelist, is_prefix
 from .errors import DAV_Error, DAV_NotFound

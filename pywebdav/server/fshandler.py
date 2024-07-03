@@ -6,8 +6,8 @@ import shutil
 from io import StringIO
 import urllib.parse
 from pywebdav.lib.constants import COLLECTION, OBJECT
-from pywebdav.lib.errors import DAV_Error, DAV_Forbidden, DAV_NotFound
-from pywebdav.lib.iface import DAV_Requested_Range_Not_Satisfiable, DAV_Secret
+from pywebdav.lib.errors import DAV_Error, DAV_Forbidden, DAV_NotFound, DAV_Requested_Range_Not_Satisfiable, DAV_Secret
+from pywebdav.lib.iface import dav_interface
 from pywebdav.lib.davcmd import copyone, copytree, moveone, movetree, delone, deltree
 from html import escape
 

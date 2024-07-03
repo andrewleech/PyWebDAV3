@@ -8,11 +8,10 @@ resources and collections
 
 """
 
-from six.moves import urllib
+import urllib.parser
 
 from .utils import create_treelist, is_prefix
-from .errors import *
-from six.moves import range
+from .errors import DAV_Error, DAV_NotFound
 import os
 
 def deltree(dc,uri,exclude={}):

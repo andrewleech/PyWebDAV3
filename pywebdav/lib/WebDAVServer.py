@@ -4,8 +4,8 @@ This module builds on BaseHTTPServer and implements DAV commands
 
 """
 from . import AuthServer
-from six.moves import urllib
 import logging
+import urllib.parse
 
 from .propfind import PROPFIND
 from .report import REPORT

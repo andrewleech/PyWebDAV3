@@ -1,5 +1,5 @@
 import time
-from six.moves import urllib
+import urllib.parse
 import uuid
 
 import logging
@@ -10,7 +10,6 @@ import xml.dom
 from xml.dom import minidom
 
 from .utils import rfc1123_date, IfParser, tokenFinder
-from .errors import *
 
 tokens_to_lock = {}
 uris_to_token = {}

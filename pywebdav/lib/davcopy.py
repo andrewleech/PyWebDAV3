@@ -2,12 +2,12 @@ import xml.dom.minidom
 domimpl = xml.dom.minidom.getDOMImplementation()
 
 import string
-from six.moves import urllib
+import urllib.parse
 from io import StringIO
 
 from . import utils
 from .constants import COLLECTION, OBJECT, DAV_PROPS, RT_ALLPROP, RT_PROPNAME, RT_PROP
-from .errors import *
+from .errors import DAV_Error
 from .utils import create_treelist, quote_uri, gen_estring
 
 class COPY:

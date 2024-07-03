@@ -1,9 +1,9 @@
-from six.moves import urllib
+import urllib.parse
 
 from . import utils
 from .constants import COLLECTION, OBJECT, DAV_PROPS
 from .constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
-from .errors import *
+from .errors import DAV_Error
 from .utils import create_treelist, quote_uri, gen_estring, make_xmlresponse, is_prefix
 from .davcmd import moveone, movetree
 

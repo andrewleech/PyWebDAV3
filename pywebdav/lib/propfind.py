@@ -2,7 +2,7 @@ import xml.dom.minidom
 domimpl = xml.dom.minidom.getDOMImplementation()
 
 import logging
-from six.moves import urllib
+import urllib.parse
 
 from . import utils
 from .constants import RT_ALLPROP, RT_PROPNAME, RT_PROP

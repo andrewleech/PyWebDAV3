@@ -2,4 +2,4 @@
 __version__ = '0.9.14'
 __author__ = 'Andrew Leech (previously Simon Pamies)'
 __email__ = 'andrew@alelec.net'
-__license__ = 'LGPL v2'
+__license__ = 'GPL v2'

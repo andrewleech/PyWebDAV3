@@ -81,7 +81,7 @@ REQUIREMENTS
 LICENSE
 -------
 
-General Public License v2
+GNU General Public License v2
 see doc/LICENSE
 
 

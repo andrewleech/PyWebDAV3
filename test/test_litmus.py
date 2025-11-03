@@ -20,7 +20,7 @@ password = 'pass'
 port = 38028
 
 class TestFilter:
-    _suites = ['props']
+    _suites = ['basic', 'copymove', 'props']
     _skipping = True
 
     def skipLine(self, line):

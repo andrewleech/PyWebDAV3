@@ -60,3 +60,5 @@ coverage.xml
 venv/
 ENV/
 
+# git-versioner generated file
+_version.py

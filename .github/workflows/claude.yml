@@ -40,11 +40,14 @@ jobs:
           additional_permissions: |
             actions: read
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+          # Custom prompt to guide Claude's behavior
+          prompt: |
+            Perform the task requested in the comment. When reviewing code:
+            - Be concise and technical
+            - Focus on correctness, bugs, security, and performance issues
+            - Avoid verbose formatting, emojis, and excessive praise
+            - State facts directly without superlatives
+            - Follow the tone and style guidelines in .claude/CLAUDE.md or CLAUDE.md if present
 
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr:*)'
+            Proceed with the user's request.
 

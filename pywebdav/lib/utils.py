@@ -6,7 +6,7 @@ from xml.dom import minidom
 import urllib.parse
 
 from .constants import RT_ALLPROP, RT_PROPNAME, RT_PROP
-from six.moves.BaseHTTPServer import BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler
 
 def gen_estring(ecode):
     """ generate an error string from the given code """

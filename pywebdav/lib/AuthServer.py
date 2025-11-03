@@ -6,7 +6,7 @@ This module builds on BaseHTTPServer and implements basic authentication
 
 import base64
 import binascii
-import six.moves.BaseHTTPServer
+from http.server import BaseHTTPRequestHandler
 
 
 DEFAULT_AUTH_ERROR_MESSAGE = """
@@ -28,7 +28,7 @@ def _quote_html(html):
     return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
+class AuthRequestHandler(BaseHTTPRequestHandler):
     """
     Simple handler that can check for auth headers
 
@@ -41,7 +41,7 @@ class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
     DO_AUTH = 1
 
     def parse_request(self):
-        if not six.moves.BaseHTTPServer.BaseHTTPRequestHandler.parse_request(self):
+        if not BaseHTTPRequestHandler.parse_request(self):
             return False
 
         if self.DO_AUTH:

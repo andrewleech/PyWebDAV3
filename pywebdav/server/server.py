@@ -13,8 +13,8 @@ import logging
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger('pywebdav')
 
-from six.moves.BaseHTTPServer import HTTPServer
-from six.moves.socketserver import ThreadingMixIn
+from http.server import HTTPServer
+from socketserver import ThreadingMixIn
 
 try:
     import pywebdav.lib

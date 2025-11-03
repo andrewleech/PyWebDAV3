@@ -46,6 +46,6 @@ setup(name='PyWebDAV3',
     entry_points={
       'console_scripts': ['davserver = pywebdav.server.server:run']
       },
-    install_requires = ['six'],
+    install_requires = [],
     setup_requires=['git-versioner'],
     )

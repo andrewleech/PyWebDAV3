@@ -73,30 +73,39 @@ def parse_proppatch(xml_doc):
 
     Returns a list of tuples: [(action, namespace, propname, value), ...]
     where action is 'set' or 'remove'
+
+    Per RFC 4918, operations must be processed in document order.
     """
     doc = minidom.parseString(xml_doc)
     operations = []
 
-    # Process <set> operations
-    for set_elem in doc.getElementsByTagNameNS("DAV:", "set"):
-        for prop_elem in set_elem.getElementsByTagNameNS("DAV:", "prop"):
-            for e in prop_elem.childNodes:
-                if e.nodeType != minidom.Node.ELEMENT_NODE:
-                    continue
-                ns = e.namespaceURI
-                name = e.localName
-                value = get_element_content(e)
-                operations.append(('set', ns, name, value))
+    # Get propertyupdate root and process children in document order
+    propertyupdate = doc.getElementsByTagNameNS("DAV:", "propertyupdate")[0]
 
-    # Process <remove> operations
-    for remove_elem in doc.getElementsByTagNameNS("DAV:", "remove"):
-        for prop_elem in remove_elem.getElementsByTagNameNS("DAV:", "prop"):
-            for e in prop_elem.childNodes:
-                if e.nodeType != minidom.Node.ELEMENT_NODE:
-                    continue
-                ns = e.namespaceURI
-                name = e.localName
-                operations.append(('remove', ns, name, None))
+    for child in propertyupdate.childNodes:
+        if child.nodeType != minidom.Node.ELEMENT_NODE:
+            continue
+
+        if child.namespaceURI == "DAV:" and child.localName == "set":
+            # Process <set> operation
+            for prop_elem in child.getElementsByTagNameNS("DAV:", "prop"):
+                for e in prop_elem.childNodes:
+                    if e.nodeType != minidom.Node.ELEMENT_NODE:
+                        continue
+                    ns = e.namespaceURI
+                    name = e.localName
+                    value = get_element_content(e)
+                    operations.append(('set', ns, name, value))
+
+        elif child.namespaceURI == "DAV:" and child.localName == "remove":
+            # Process <remove> operation
+            for prop_elem in child.getElementsByTagNameNS("DAV:", "prop"):
+                for e in prop_elem.childNodes:
+                    if e.nodeType != minidom.Node.ELEMENT_NODE:
+                        continue
+                    ns = e.namespaceURI
+                    name = e.localName
+                    operations.append(('remove', ns, name, None))
 
     return operations
 

@@ -210,13 +210,26 @@ class PROPFIND:
         for ns, plist in propnames.items():
             # write prop element
             pr = doc.createElement("D:prop")
-            nsp = "ns" + str(nsnum)
-            pr.setAttribute("xmlns:" + nsp, ns)
-            nsnum += 1
+
+            # Handle namespace prefixes
+            if ns == 'DAV:':
+                nsp = 'D'
+                # DAV: namespace already declared on multistatus
+            elif ns is None:
+                nsp = None  # No prefix for null namespace
+            else:
+                nsp = "ns" + str(nsnum)
+                pr.setAttribute("xmlns:" + nsp, ns)
+                nsnum += 1
 
             # write propertynames
             for p in plist:
-                pe = doc.createElement(nsp + ":" + p)
+                if nsp:
+                    pe = doc.createElement(nsp + ":" + p)
+                else:
+                    # Null namespace - no prefix
+                    pe = doc.createElement(p)
+                    pe.setAttribute("xmlns", "")
                 pr.appendChild(pe)
 
             ps.appendChild(pr)
@@ -236,7 +249,8 @@ class PROPFIND:
         # append namespaces to response
         nsnum = 0
         for nsname in self.namespaces:
-            if nsname != 'DAV:':
+            # Skip None (null namespace) and DAV: (handled as D: prefix)
+            if nsname != 'DAV:' and nsname is not None:
                 re.setAttribute("xmlns:ns" + str(nsnum), nsname)
             nsnum += 1
 
@@ -261,13 +275,18 @@ class PROPFIND:
 
         gp = doc.createElement("D:prop")
         for ns in good_props.keys():
-            if ns != 'DAV:':
-                ns_prefix = "ns" + str(self.namespaces.index(ns)) + ":"
-            else:
+            if ns == 'DAV:':
                 ns_prefix = 'D:'
+            elif ns is None:
+                ns_prefix = ''  # No prefix for null namespace
+            else:
+                ns_prefix = "ns" + str(self.namespaces.index(ns)) + ":"
             for p, v in good_props[ns].items():
 
                 pe = doc.createElement(ns_prefix + str(p))
+                # For null namespace, add xmlns="" to undeclare namespace
+                if ns is None:
+                    pe.setAttribute("xmlns", "")
                 if isinstance(v, xml.dom.minidom.Element):
                     pe.appendChild(v)
                 elif isinstance(v, list):
@@ -302,13 +321,18 @@ class PROPFIND:
                 ps.appendChild(bp)
 
                 for ns in bad_props[ecode].keys():
-                    if ns != 'DAV:':
-                        ns_prefix = "ns" + str(self.namespaces.index(ns)) + ":"
-                    else:
+                    if ns == 'DAV:':
                         ns_prefix = 'D:'
+                    elif ns is None:
+                        ns_prefix = ''  # No prefix for null namespace
+                    else:
+                        ns_prefix = "ns" + str(self.namespaces.index(ns)) + ":"
 
                     for p in bad_props[ecode][ns]:
                         pe = doc.createElement(ns_prefix + str(p))
+                        # For null namespace, add xmlns="" to undeclare namespace
+                        if ns is None:
+                            pe.setAttribute("xmlns", "")
                         bp.appendChild(pe)
 
                 s = doc.createElement("D:status")

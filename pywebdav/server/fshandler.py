@@ -325,6 +325,30 @@ class FilesystemHandler(dav_interface):
         except IOError:
             pass  # Best effort unlock
 
+    def _normalize_props_for_json(self, props):
+        """
+        Convert props dict for JSON storage: None namespace → "null" string
+
+        JSON doesn't support None as dict keys, so we use the string "null"
+        """
+        normalized = {}
+        for ns, propdict in props.items():
+            json_key = "null" if ns is None else ns
+            normalized[json_key] = propdict
+        return normalized
+
+    def _normalize_props_from_json(self, props):
+        """
+        Convert props dict from JSON storage: "null" string → None namespace
+
+        This reverses _normalize_props_for_json()
+        """
+        normalized = {}
+        for ns, propdict in props.items():
+            python_key = None if ns == "null" else ns
+            normalized[python_key] = propdict
+        return normalized
+
     def _validate_property_limits(self, props):
         """
         Validate that properties don't exceed resource limits
@@ -335,7 +359,7 @@ class FilesystemHandler(dav_interface):
         if total_count > MAX_PROPERTY_COUNT:
             raise DAV_Error(507, f'Property count exceeds limit of {MAX_PROPERTY_COUNT}')
 
-        total_size = len(json.dumps(props))
+        total_size = len(json.dumps(self._normalize_props_for_json(props)))
         if total_size > MAX_PROPERTY_TOTAL_SIZE:
             raise DAV_Error(507, f'Total property size exceeds limit of {MAX_PROPERTY_TOTAL_SIZE} bytes')
 
@@ -350,6 +374,7 @@ class FilesystemHandler(dav_interface):
         Load dead properties from .props file with file locking
 
         Returns a dict: {namespace: {propname: value, ...}, ...}
+        Namespace can be None for properties with xmlns=""
         """
         props_file = self._get_props_file(uri)
         if not os.path.exists(props_file):
@@ -360,6 +385,8 @@ class FilesystemHandler(dav_interface):
                 self._lock_props_file(f)
                 try:
                     props = json.load(f)
+                    # Convert "null" string back to None for null namespaces
+                    props = self._normalize_props_from_json(props)
                 finally:
                     self._unlock_props_file(f)
                 return props
@@ -372,6 +399,7 @@ class FilesystemHandler(dav_interface):
         Atomically write properties to file using temp file + rename
 
         This provides atomicity: either the write succeeds completely or not at all.
+        Converts None namespace to "null" string for JSON compatibility.
         """
         # Write to temporary file first
         temp_fd, temp_path = tempfile.mkstemp(
@@ -382,8 +410,9 @@ class FilesystemHandler(dav_interface):
 
         try:
             with os.fdopen(temp_fd, 'w') as f:
-                # Use compact JSON to reduce file size (no indent)
-                json.dump(props, f)
+                # Convert None to "null" for JSON, use compact JSON to reduce file size
+                json_props = self._normalize_props_for_json(props)
+                json.dump(json_props, f)
                 f.flush()
                 os.fsync(f.fileno())  # Ensure data is on disk
 
@@ -431,6 +460,8 @@ class FilesystemHandler(dav_interface):
                 self._lock_props_file(f)
                 try:
                     props = json.load(f)
+                    # Convert "null" string back to None for null namespaces
+                    props = self._normalize_props_from_json(props)
                 except json.JSONDecodeError:
                     props = {}
         else:
@@ -480,6 +511,8 @@ class FilesystemHandler(dav_interface):
             self._lock_props_file(f)
             try:
                 props = json.load(f)
+                # Convert "null" string back to None for null namespaces
+                props = self._normalize_props_from_json(props)
             except json.JSONDecodeError:
                 props = {}
 

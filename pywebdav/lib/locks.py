@@ -11,26 +11,33 @@ from xml.dom import minidom
 
 from .utils import rfc1123_date, IfParser, tokenFinder
 
-tokens_to_lock = {}
-uris_to_token = {}
+tokens_to_lock = {}  # {token_string: LockItem}
+uris_to_locks = {}   # {uri: [LockItem, ...]} - supports multiple shared locks
 
 class LockManager:
     """ Implements the locking backend and serves as MixIn for DAVRequestHandler """
 
     def _init_locks(self):
-        return tokens_to_lock, uris_to_token
+        return tokens_to_lock, uris_to_locks
 
     def _l_isLocked(self, uri):
         tokens, uris = self._init_locks()
-        return uri in uris
+        return uri in uris and len(uris[uri]) > 0
 
     def _l_hasLock(self, token):
         tokens, uris = self._init_locks()
         return token in tokens
 
     def _l_getLockForUri(self, uri):
+        """Get the first lock for a URI (for backward compatibility)"""
         tokens, uris = self._init_locks()
-        return uris.get(uri, None)
+        locks = uris.get(uri, [])
+        return locks[0] if locks else None
+
+    def _l_getLocksForUri(self, uri):
+        """Get all locks for a URI (supports shared locks)"""
+        tokens, uris = self._init_locks()
+        return uris.get(uri, [])
 
     def _l_getLock(self, token):
         tokens, uris = self._init_locks()
@@ -39,13 +46,24 @@ class LockManager:
     def _l_delLock(self, token):
         tokens, uris = self._init_locks()
         if token in tokens:
-            del uris[tokens[token].uri]
+            lock = tokens[token]
+            uri = lock.uri
+            # Remove from uri -> locks mapping
+            if uri in uris:
+                uris[uri] = [l for l in uris[uri] if l.token != token]
+                # Clean up empty list
+                if not uris[uri]:
+                    del uris[uri]
+            # Remove from token -> lock mapping
             del tokens[token]
 
     def _l_setLock(self, lock):
         tokens, uris = self._init_locks()
         tokens[lock.token] = lock
-        uris[lock.uri] = lock
+        # Append to list of locks for this URI (supports shared locks)
+        if lock.uri not in uris:
+            uris[lock.uri] = []
+        uris[lock.uri].append(lock)
 
     def _lock_unlock_parse(self, body):
         doc = minidom.parseString(body)
@@ -68,8 +86,27 @@ class LockManager:
             # locking of children/collections not yet supported
             pass
 
-        if not self._l_isLocked(uri):
-            self._l_setLock(lock)
+        # Check if we can add this lock based on existing locks
+        existing_locks = self._l_getLocksForUri(uri)
+
+        if existing_locks:
+            # Resource already has locks - check compatibility
+            for existing in existing_locks:
+                # If any existing lock is exclusive, reject
+                if existing.lockscope == 'exclusive':
+                    log.info(f'Cannot lock {uri}: exclusive lock exists')
+                    raise Exception('Resource is exclusively locked')
+
+                # If we're trying to get exclusive lock but shared locks exist, reject
+                if lock.lockscope == 'exclusive':
+                    log.info(f'Cannot get exclusive lock on {uri}: shared locks exist')
+                    raise Exception('Resource has shared locks')
+
+            # All existing locks are shared and new lock is shared - OK
+            # (This path only reached if all above conditions pass)
+
+        # No conflicts - set the lock
+        self._l_setLock(lock)
 
         # because we do not handle children we leave result empty
         return lock.token, result

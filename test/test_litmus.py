@@ -81,7 +81,7 @@ class Test(unittest.TestCase):
                 results = ret.stdout
             except subprocess.CalledProcessError as ex:
                 results = ex.output
-            lines = results.decode().split('\n')
+            lines = results.decode(errors='replace').split('\n')
             assert len(lines), "No litmus output"
             filter = TestFilter()
             for line in lines:
@@ -119,7 +119,7 @@ class Test(unittest.TestCase):
                 
             except subprocess.CalledProcessError as ex:
                 results = ex.output
-            lines = results.decode().split('\n')
+            lines = results.decode(errors='replace').split('\n')
             assert len(lines), "No litmus output"
             filter = TestFilter()
             for line in lines:

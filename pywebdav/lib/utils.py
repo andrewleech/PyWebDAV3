@@ -48,6 +48,51 @@ def parse_propfind(xml_doc):
     return request_type,props,namespaces
 
 
+def get_element_text(element):
+    """
+    Extract text content from an XML element
+    """
+    text = []
+    for node in element.childNodes:
+        if node.nodeType == minidom.Node.TEXT_NODE:
+            text.append(node.data)
+    return ''.join(text)
+
+
+def parse_proppatch(xml_doc):
+    """
+    Parse a PROPPATCH propertyupdate XML document
+
+    Returns a list of tuples: [(action, namespace, propname, value), ...]
+    where action is 'set' or 'remove'
+    """
+    doc = minidom.parseString(xml_doc)
+    operations = []
+
+    # Process <set> operations
+    for set_elem in doc.getElementsByTagNameNS("DAV:", "set"):
+        for prop_elem in set_elem.getElementsByTagNameNS("DAV:", "prop"):
+            for e in prop_elem.childNodes:
+                if e.nodeType != minidom.Node.ELEMENT_NODE:
+                    continue
+                ns = e.namespaceURI
+                name = e.localName
+                value = get_element_text(e)
+                operations.append(('set', ns, name, value))
+
+    # Process <remove> operations
+    for remove_elem in doc.getElementsByTagNameNS("DAV:", "remove"):
+        for prop_elem in remove_elem.getElementsByTagNameNS("DAV:", "prop"):
+            for e in prop_elem.childNodes:
+                if e.nodeType != minidom.Node.ELEMENT_NODE:
+                    continue
+                ns = e.namespaceURI
+                name = e.localName
+                operations.append(('remove', ns, name, None))
+
+    return operations
+
+
 def create_treelist(dataclass,uri):
     """ create a list of resources out of a tree
 

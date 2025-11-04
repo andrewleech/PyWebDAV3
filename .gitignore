@@ -56,6 +56,9 @@ coverage.xml
 # dotenv
 .env
 
+# WebDAV dead property storage
+*.props
+
 # virtualenv
 venv/
 ENV/

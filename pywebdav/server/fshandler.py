@@ -4,6 +4,7 @@ import time
 import logging
 import types
 import shutil
+import json
 from io import StringIO
 import urllib.parse
 from pywebdav.lib.constants import COLLECTION, OBJECT
@@ -276,6 +277,150 @@ class FilesystemHandler(dav_interface):
             raise DAV_Error(424)
 
         return None
+
+    ###
+    ### Dead Property Storage (PROPPATCH support)
+    ###
+
+    def _get_props_file(self, uri):
+        """
+        Get the path to the .props file for a resource
+
+        Properties are stored in JSON files with .props extension
+        alongside the resource files.
+        """
+        local_path = self.uri2local(uri)
+        return local_path + '.props'
+
+    def get_dead_props(self, uri):
+        """
+        Load dead properties from .props file
+
+        Returns a dict: {namespace: {propname: value, ...}, ...}
+        """
+        props_file = self._get_props_file(uri)
+        if os.path.exists(props_file):
+            try:
+                with open(props_file, 'r') as f:
+                    return json.load(f)
+            except (IOError, json.JSONDecodeError) as e:
+                log.error('Error reading props file %s: %s' % (props_file, str(e)))
+                return {}
+        return {}
+
+    def set_prop(self, uri, ns, propname, value):
+        """
+        Set a dead property value
+
+        Properties are stored in JSON format in .props files
+        """
+        # Reject protected DAV: namespace properties
+        if ns == "DAV:":
+            raise DAV_Forbidden('Cannot modify DAV: properties')
+
+        # Check if resource exists
+        local_path = self.uri2local(uri)
+        if not os.path.exists(local_path):
+            raise DAV_NotFound
+
+        # Load existing properties
+        props = self.get_dead_props(uri)
+
+        # Set the property
+        if ns not in props:
+            props[ns] = {}
+        props[ns][propname] = value
+
+        # Save properties
+        props_file = self._get_props_file(uri)
+        try:
+            with open(props_file, 'w') as f:
+                json.dump(props, f, indent=2)
+        except IOError as e:
+            log.error('Error writing props file %s: %s' % (props_file, str(e)))
+            raise DAV_Error(500, 'Cannot save properties')
+
+        return True
+
+    def del_prop(self, uri, ns, propname):
+        """
+        Delete a dead property
+
+        This is idempotent - succeeds even if property doesn't exist
+        """
+        # Check if resource exists
+        local_path = self.uri2local(uri)
+        if not os.path.exists(local_path):
+            raise DAV_NotFound
+
+        # Load existing properties
+        props = self.get_dead_props(uri)
+
+        # Remove the property if it exists
+        if ns in props and propname in props[ns]:
+            del props[ns][propname]
+
+            # Remove empty namespace
+            if not props[ns]:
+                del props[ns]
+
+            props_file = self._get_props_file(uri)
+
+            # If no properties left, remove the .props file
+            if not props:
+                if os.path.exists(props_file):
+                    try:
+                        os.remove(props_file)
+                    except IOError as e:
+                        log.error('Error removing props file %s: %s' % (props_file, str(e)))
+            else:
+                # Save remaining properties
+                try:
+                    with open(props_file, 'w') as f:
+                        json.dump(props, f, indent=2)
+                except IOError as e:
+                    log.error('Error writing props file %s: %s' % (props_file, str(e)))
+                    raise DAV_Error(500, 'Cannot save properties')
+
+        return True
+
+    def get_propnames(self, uri):
+        """
+        Override to include dead properties
+
+        Returns a dict: {namespace: [propname1, propname2, ...], ...}
+        """
+        # Get live properties from parent class
+        live_props = super().get_propnames(uri)
+
+        # Get dead properties
+        dead_props = self.get_dead_props(uri)
+
+        # Merge
+        all_props = dict(live_props)
+        for ns, propdict in dead_props.items():
+            if ns in all_props:
+                # Merge with existing namespace
+                all_props[ns] = list(set(all_props[ns]) | set(propdict.keys()))
+            else:
+                # Add new namespace
+                all_props[ns] = list(propdict.keys())
+
+        return all_props
+
+    def get_prop(self, uri, ns, propname):
+        """
+        Override to check dead properties first
+
+        This allows dead properties to shadow live properties
+        """
+        # Try dead properties first
+        dead_props = self.get_dead_props(uri)
+        if ns in dead_props and propname in dead_props[ns]:
+            return dead_props[ns][propname]
+
+        # Fall back to live properties
+        return super().get_prop(uri, ns, propname)
 
     def mkcol(self,uri):
         """ create a new collection """

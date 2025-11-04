@@ -8,6 +8,7 @@ import logging
 import urllib.parse
 
 from .propfind import PROPFIND
+from .proppatch import PROPPATCH
 from .report import REPORT
 from .delete import DELETE
 from .davcopy import COPY
@@ -314,8 +315,78 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         self.send_body(None, 405, 'Method Not Allowed', 'Method Not Allowed')
 
     def do_PROPPATCH(self):
-        # currently unsupported
-        return self.send_status(423)
+        """ Modify properties on a resource. """
+
+        dc = self.IFACE_CLASS
+
+        # Read the body containing the XML request
+        body = None
+        if 'Content-Length' in self.headers:
+            l = self.headers['Content-Length']
+            body = self.rfile.read(int(l))
+
+        if not body:
+            return self.send_status(400)
+
+        uri = urllib.parse.unquote(urllib.parse.urljoin(self.get_baseuri(dc), self.path))
+
+        # Check if resource is locked
+        if self._l_isLocked(uri):
+            # Resource is locked - check for valid lock token in If header
+            ifheader = self.headers.get('If')
+
+            if not ifheader:
+                # No If header provided - return 423 Locked
+                return self.send_status(423)
+
+            # Parse If header and validate lock token
+            uri_token = self._l_getLockForUri(uri)
+            taglist = IfParser(ifheader)
+            found = False
+
+            for tag in taglist:
+                for listitem in tag.list:
+                    token = tokenFinder(listitem)
+                    if (token and
+                        self._l_hasLock(token) and
+                        self._l_getLock(token) == uri_token):
+                        found = True
+                        break
+                if found:
+                    break
+
+            if not found:
+                # Valid token not found - return 423 Locked
+                return self.send_status(423)
+
+        # Parse and execute PROPPATCH
+        try:
+            pp = PROPPATCH(uri, dc, body)
+        except ExpatError:
+            # XML parse error
+            return self.send_status(400)
+        except DAV_Error as error:
+            (ec, dd) = error.args
+            return self.send_status(ec)
+
+        # Execute the property operations
+        try:
+            pp.validate_and_execute()
+        except DAV_NotFound:
+            return self.send_status(404)
+        except DAV_Error as error:
+            (ec, dd) = error.args
+            return self.send_status(ec)
+
+        # Generate Multi-Status response
+        try:
+            DATA = pp.create_response()
+        except DAV_Error as error:
+            (ec, dd) = error.args
+            return self.send_status(ec)
+
+        self.send_body_chunks_if_http11(DATA, 207, 'Multi-Status',
+                                        'Multiple responses')
 
     def do_PROPFIND(self):
         """ Retrieve properties on defined resource. """

@@ -19,6 +19,14 @@ DAV_VERSION_1 = {
 
 DAV_VERSION_2 = {
         'version' : '1,2',
-        'options' : 
+        'options' :
         DAV_VERSION_1['options'] + ', LOCK, UNLOCK'
 }
+
+# WebDAV namespace
+DAV_NAMESPACE = "DAV:"
+
+# Property storage limits
+MAX_PROPERTY_COUNT = 1000  # Maximum properties per resource
+MAX_PROPERTY_VALUE_SIZE = 1024 * 1024  # 1MB per property value
+MAX_PROPERTY_TOTAL_SIZE = 10 * 1024 * 1024  # 10MB total per resource

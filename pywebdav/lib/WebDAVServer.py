@@ -340,11 +340,28 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
                 return self.send_status(423)
 
             # Parse If header and validate lock token
+            # Per RFC 4918 Section 10.4:
+            # - Tagged lists (with resource) only apply if resource matches
+            # - Untagged lists apply to the Request-URI
+            # - At least one tag must be satisfied
+            #
+            # NOTE: Lock owner validation is not implemented - the locking system
+            # hardcodes creator as 'unknown' (see locks.py:128). Full owner
+            # validation requires an authentication system.
             uri_token = self._l_getLockForUri(uri)
             taglist = IfParser(ifheader)
             found = False
 
             for tag in taglist:
+                # If tag has a resource, check if it matches the Request-URI
+                if tag.resource:
+                    # Tagged list - only applies if resource matches
+                    # Normalize both URIs for comparison
+                    tag_uri = urllib.parse.unquote(tag.resource)
+                    if tag_uri != uri:
+                        continue  # This tag doesn't apply to this resource
+
+                # Tag applies to this resource - check if any token is valid
                 for listitem in tag.list:
                     token = tokenFinder(listitem)
                     if (token and

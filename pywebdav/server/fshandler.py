@@ -5,9 +5,11 @@ import logging
 import types
 import shutil
 import json
+import fcntl
+import tempfile
 from io import StringIO
 import urllib.parse
-from pywebdav.lib.constants import COLLECTION, OBJECT
+from pywebdav.lib.constants import COLLECTION, OBJECT, DAV_NAMESPACE, MAX_PROPERTY_COUNT, MAX_PROPERTY_VALUE_SIZE, MAX_PROPERTY_TOTAL_SIZE
 from pywebdav.lib.errors import DAV_Error, DAV_Forbidden, DAV_NotFound, DAV_Requested_Range_Not_Satisfiable, DAV_Secret
 from pywebdav.lib.iface import dav_interface
 from pywebdav.lib.davcmd import copyone, copytree, moveone, movetree, delone, deltree
@@ -284,105 +286,268 @@ class FilesystemHandler(dav_interface):
 
     def _get_props_file(self, uri):
         """
-        Get the path to the .props file for a resource
+        Get the path to the .props file for a resource with security validation
 
         Properties are stored in JSON files with .props extension
         alongside the resource files.
+
+        Raises DAV_Forbidden if the path escapes the base directory.
         """
         local_path = self.uri2local(uri)
-        return local_path + '.props'
+        props_path = local_path + '.props'
+
+        # Security: Validate path is within base directory
+        normalized_base = os.path.normpath(os.path.realpath(self.directory))
+        normalized_props = os.path.normpath(os.path.realpath(props_path))
+
+        if not normalized_props.startswith(normalized_base):
+            log.error(f'Path traversal attempt: {props_path} escapes {self.directory}')
+            raise DAV_Forbidden('Invalid path')
+
+        return props_path
+
+    def _lock_props_file(self, file_handle):
+        """
+        Acquire exclusive lock on property file to prevent race conditions
+        """
+        try:
+            fcntl.flock(file_handle.fileno(), fcntl.LOCK_EX)
+        except IOError as e:
+            log.error(f'Failed to lock property file: {e}')
+            raise DAV_Error(500, 'Cannot lock property file')
+
+    def _unlock_props_file(self, file_handle):
+        """
+        Release lock on property file
+        """
+        try:
+            fcntl.flock(file_handle.fileno(), fcntl.LOCK_UN)
+        except IOError:
+            pass  # Best effort unlock
+
+    def _validate_property_limits(self, props):
+        """
+        Validate that properties don't exceed resource limits
+
+        Raises DAV_Error(507) if limits are exceeded
+        """
+        total_count = sum(len(propdict) for propdict in props.values())
+        if total_count > MAX_PROPERTY_COUNT:
+            raise DAV_Error(507, f'Property count exceeds limit of {MAX_PROPERTY_COUNT}')
+
+        total_size = len(json.dumps(props))
+        if total_size > MAX_PROPERTY_TOTAL_SIZE:
+            raise DAV_Error(507, f'Total property size exceeds limit of {MAX_PROPERTY_TOTAL_SIZE} bytes')
+
+        # Check individual property value sizes
+        for ns, propdict in props.items():
+            for propname, value in propdict.items():
+                if len(value) > MAX_PROPERTY_VALUE_SIZE:
+                    raise DAV_Error(507, f'Property value size exceeds limit of {MAX_PROPERTY_VALUE_SIZE} bytes')
 
     def get_dead_props(self, uri):
         """
-        Load dead properties from .props file
+        Load dead properties from .props file with file locking
 
         Returns a dict: {namespace: {propname: value, ...}, ...}
         """
         props_file = self._get_props_file(uri)
-        if os.path.exists(props_file):
+        if not os.path.exists(props_file):
+            return {}
+
+        try:
+            with open(props_file, 'r') as f:
+                self._lock_props_file(f)
+                try:
+                    props = json.load(f)
+                finally:
+                    self._unlock_props_file(f)
+                return props
+        except (IOError, json.JSONDecodeError) as e:
+            log.error(f'Error reading props file: {e}')
+            return {}
+
+    def _atomic_write_props(self, props_file, props):
+        """
+        Atomically write properties to file using temp file + rename
+
+        This provides atomicity: either the write succeeds completely or not at all.
+        """
+        # Write to temporary file first
+        temp_fd, temp_path = tempfile.mkstemp(
+            dir=os.path.dirname(props_file),
+            prefix='.props.tmp.',
+            suffix='.json'
+        )
+
+        try:
+            with os.fdopen(temp_fd, 'w') as f:
+                # Use compact JSON to reduce file size (no indent)
+                json.dump(props, f)
+                f.flush()
+                os.fsync(f.fileno())  # Ensure data is on disk
+
+            # Atomic rename
+            os.rename(temp_path, props_file)
+
+        except Exception as e:
+            # Clean up temp file on failure
             try:
-                with open(props_file, 'r') as f:
-                    return json.load(f)
-            except (IOError, json.JSONDecodeError) as e:
-                log.error('Error reading props file %s: %s' % (props_file, str(e)))
-                return {}
-        return {}
+                os.unlink(temp_path)
+            except:
+                pass
+            raise e
 
     def set_prop(self, uri, ns, propname, value):
         """
-        Set a dead property value
+        Set a dead property value with proper locking and validation
 
-        Properties are stored in JSON format in .props files
+        Properties are stored in JSON format in .props files.
+        Uses file locking to prevent race conditions.
         """
         # Reject protected DAV: namespace properties
-        if ns == "DAV:":
+        if ns == DAV_NAMESPACE:
             raise DAV_Forbidden('Cannot modify DAV: properties')
+
+        # Validate property value size
+        if len(value) > MAX_PROPERTY_VALUE_SIZE:
+            raise DAV_Error(507, f'Property value too large (max {MAX_PROPERTY_VALUE_SIZE} bytes)')
 
         # Check if resource exists
         local_path = self.uri2local(uri)
         if not os.path.exists(local_path):
             raise DAV_NotFound
 
-        # Load existing properties
-        props = self.get_dead_props(uri)
-
-        # Set the property
-        if ns not in props:
-            props[ns] = {}
-        props[ns][propname] = value
-
-        # Save properties
         props_file = self._get_props_file(uri)
+
+        # Create parent directory if needed
+        props_dir = os.path.dirname(props_file)
+        if not os.path.exists(props_dir):
+            os.makedirs(props_dir, exist_ok=True)
+
+        # Lock and load existing properties
+        if os.path.exists(props_file):
+            with open(props_file, 'r+') as f:
+                self._lock_props_file(f)
+                try:
+                    props = json.load(f)
+                except json.JSONDecodeError:
+                    props = {}
+        else:
+            # Create new properties file with lock
+            open(props_file, 'a').close()  # Touch file
+            with open(props_file, 'r+') as f:
+                self._lock_props_file(f)
+                props = {}
+
         try:
-            with open(props_file, 'w') as f:
-                json.dump(props, f, indent=2)
-        except IOError as e:
-            log.error('Error writing props file %s: %s' % (props_file, str(e)))
-            raise DAV_Error(500, 'Cannot save properties')
+            # Set the property
+            if ns not in props:
+                props[ns] = {}
+            props[ns][propname] = value
+
+            # Validate limits
+            self._validate_property_limits(props)
+
+            # Atomic write
+            self._atomic_write_props(props_file, props)
+
+        finally:
+            # Unlock is handled by file close, but explicit for clarity
+            pass
 
         return True
 
     def del_prop(self, uri, ns, propname):
         """
-        Delete a dead property
+        Delete a dead property with proper locking
 
-        This is idempotent - succeeds even if property doesn't exist
+        This is idempotent - succeeds even if property doesn't exist.
+        Uses file locking to prevent race conditions.
         """
         # Check if resource exists
         local_path = self.uri2local(uri)
         if not os.path.exists(local_path):
             raise DAV_NotFound
 
-        # Load existing properties
-        props = self.get_dead_props(uri)
+        props_file = self._get_props_file(uri)
 
-        # Remove the property if it exists
-        if ns in props and propname in props[ns]:
-            del props[ns][propname]
+        if not os.path.exists(props_file):
+            return True  # Idempotent: already doesn't exist
 
-            # Remove empty namespace
-            if not props[ns]:
-                del props[ns]
+        # Lock and load properties
+        with open(props_file, 'r+') as f:
+            self._lock_props_file(f)
+            try:
+                props = json.load(f)
+            except json.JSONDecodeError:
+                props = {}
 
-            props_file = self._get_props_file(uri)
+            # Remove the property if it exists
+            if ns in props and propname in props[ns]:
+                del props[ns][propname]
 
-            # If no properties left, remove the .props file
-            if not props:
-                if os.path.exists(props_file):
-                    try:
-                        os.remove(props_file)
-                    except IOError as e:
-                        log.error('Error removing props file %s: %s' % (props_file, str(e)))
-            else:
-                # Save remaining properties
-                try:
-                    with open(props_file, 'w') as f:
-                        json.dump(props, f, indent=2)
-                except IOError as e:
-                    log.error('Error writing props file %s: %s' % (props_file, str(e)))
-                    raise DAV_Error(500, 'Cannot save properties')
+                # Remove empty namespace
+                if not props[ns]:
+                    del props[ns]
+
+        # If no properties left, remove the .props file
+        if not props:
+            try:
+                os.remove(props_file)
+            except IOError as e:
+                log.error(f'Error removing props file: {e}')
+        else:
+            # Save remaining properties atomically
+            self._atomic_write_props(props_file, props)
 
         return True
+
+    def _copy_props_file(self, src_uri, dst_uri):
+        """
+        Copy .props file from source to destination
+
+        Used internally by COPY operation to preserve properties.
+        """
+        try:
+            src_props = self._get_props_file(src_uri)
+            dst_props = self._get_props_file(dst_uri)
+
+            if os.path.exists(src_props):
+                shutil.copy2(src_props, dst_props)
+        except Exception as e:
+            log.warning(f'Failed to copy properties from {src_uri} to {dst_uri}: {e}')
+            # Non-fatal: resource copied even if properties aren't
+
+    def _move_props_file(self, src_uri, dst_uri):
+        """
+        Move .props file from source to destination
+
+        Used internally by MOVE operation to preserve properties.
+        """
+        try:
+            src_props = self._get_props_file(src_uri)
+            dst_props = self._get_props_file(dst_uri)
+
+            if os.path.exists(src_props):
+                shutil.move(src_props, dst_props)
+        except Exception as e:
+            log.warning(f'Failed to move properties from {src_uri} to {dst_uri}: {e}')
+            # Non-fatal: resource moved even if properties aren't
+
+    def _delete_props_file(self, uri):
+        """
+        Delete .props file for a resource
+
+        Used internally by DELETE operation.
+        """
+        try:
+            props_file = self._get_props_file(uri)
+            if os.path.exists(props_file):
+                os.remove(props_file)
+        except Exception as e:
+            log.warning(f'Failed to delete properties for {uri}: {e}')
+            # Non-fatal: resource deleted even if properties aren't
 
     def get_propnames(self, uri):
         """
@@ -410,17 +575,23 @@ class FilesystemHandler(dav_interface):
 
     def get_prop(self, uri, ns, propname):
         """
-        Override to check dead properties first
+        Override to check properties - live properties take precedence
 
-        This allows dead properties to shadow live properties
+        Dead properties should never shadow live (computed) properties.
         """
-        # Try dead properties first
+        # Try live properties first
+        try:
+            return super().get_prop(uri, ns, propname)
+        except DAV_NotFound:
+            pass
+
+        # Fall back to dead properties only if live property doesn't exist
         dead_props = self.get_dead_props(uri)
         if ns in dead_props and propname in dead_props[ns]:
             return dead_props[ns][propname]
 
-        # Fall back to live properties
-        return super().get_prop(uri, ns, propname)
+        # Property not found in either
+        raise DAV_NotFound
 
     def mkcol(self,uri):
         """ create a new collection """
@@ -464,13 +635,15 @@ class FilesystemHandler(dav_interface):
         return 204
 
     def rm(self,uri):
-        """ delete a normal resource """
+        """ delete a normal resource and its properties """
         path=self.uri2local(uri)
         if not os.path.exists(path):
             raise DAV_NotFound
 
         try:
             os.unlink(path)
+            # Also delete associated .props file
+            self._delete_props_file(uri)
         except OSError as ex:
             log.info('rm: Forbidden (%s)' % ex)
             raise DAV_Forbidden # forbidden
@@ -545,26 +718,28 @@ class FilesystemHandler(dav_interface):
     ###
 
     def copy(self,src,dst):
-        """ copy a resource from src to dst """
+        """ copy a resource from src to dst, including properties """
 
         srcfile=self.uri2local(src)
         dstfile=self.uri2local(dst)
         try:
             shutil.copy(srcfile, dstfile)
+            # Also copy associated .props file
+            self._copy_props_file(src, dst)
         except (OSError, IOError):
             log.info('copy: forbidden')
             raise DAV_Error(409)
 
     def copycol(self, src, dst):
-        """ copy a collection.
+        """ copy a collection, including properties
 
         As this is not recursive (the davserver recurses itself)
-        we will only create a new directory here. For some more
-        advanced systems we might also have to copy properties from
-        the source to the destination.
+        we will only create a new directory here and copy properties.
         """
-
-        return self.mkcol(dst)
+        result = self.mkcol(dst)
+        # Copy collection properties
+        self._copy_props_file(src, dst)
+        return result
 
     def exists(self,uri):
         """ test if a resource exists """

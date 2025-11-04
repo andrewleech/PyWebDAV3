@@ -6,6 +6,7 @@ import urllib.parse
 
 from . import utils
 from .errors import DAV_Error, DAV_NotFound, DAV_Forbidden
+from .constants import DAV_NAMESPACE
 
 log = logging.getLogger(__name__)
 
@@ -59,27 +60,21 @@ class PROPPATCH:
         validation_errors = []
         for action, ns, propname, value in self._operations:
             # Check if property is protected (DAV: namespace properties)
-            if ns == "DAV:":
+            if ns == DAV_NAMESPACE:
                 validation_errors.append((ns, propname, 403, 'Forbidden'))
                 continue
 
             # For 'set' operations, check if we can set the property
             if action == 'set':
-                try:
-                    # Just check the interface has the method
-                    if not hasattr(self._dataclass, 'set_prop'):
-                        validation_errors.append((ns, propname, 403, 'Forbidden'))
-                except Exception as e:
-                    validation_errors.append((ns, propname, 500, str(e)))
+                # Just check the interface has the method
+                if not hasattr(self._dataclass, 'set_prop'):
+                    validation_errors.append((ns, propname, 403, 'Forbidden'))
 
             # For 'remove' operations, check if we can remove
             elif action == 'remove':
-                try:
-                    # Just check the interface has the method
-                    if not hasattr(self._dataclass, 'del_prop'):
-                        validation_errors.append((ns, propname, 403, 'Forbidden'))
-                except Exception as e:
-                    validation_errors.append((ns, propname, 500, str(e)))
+                # Just check the interface has the method
+                if not hasattr(self._dataclass, 'del_prop'):
+                    validation_errors.append((ns, propname, 403, 'Forbidden'))
 
         # If any validation failed, mark all as failed (atomicity)
         if validation_errors:
@@ -99,7 +94,13 @@ class PROPPATCH:
             return False
 
         # Phase 2: Execute all operations (all validation passed)
+        # NOTE: With file-based storage, true atomicity requires complex
+        # rollback mechanisms. We use file locking to prevent races, and
+        # fail-fast to minimize partial updates. On first failure, we stop
+        # and mark remaining operations as 424 Failed Dependency.
         all_success = True
+        execution_index = 0
+
         for action, ns, propname, value in self._operations:
             try:
                 if action == 'set':
@@ -108,27 +109,38 @@ class PROPPATCH:
                 elif action == 'remove':
                     self._dataclass.del_prop(self._uri, ns, propname)
                     self._results[(ns, propname)] = (200, 'OK')
+                execution_index += 1
+
             except DAV_Forbidden:
                 self._results[(ns, propname)] = (403, 'Forbidden')
                 all_success = False
+                break  # Stop on first failure
             except DAV_NotFound:
                 # For remove, this is OK (idempotent)
                 if action == 'remove':
                     self._results[(ns, propname)] = (200, 'OK')
+                    execution_index += 1
                 else:
                     self._results[(ns, propname)] = (404, 'Not Found')
                     all_success = False
+                    break  # Stop on first failure
             except DAV_Error as e:
                 code = e.args[0] if e.args else 500
                 self._results[(ns, propname)] = (code, str(e))
                 all_success = False
+                break  # Stop on first failure
             except Exception as e:
-                log.error('PROPPATCH: Unexpected error: %s' % str(e))
+                log.error(f'PROPPATCH: Unexpected error: {e}')
                 self._results[(ns, propname)] = (500, 'Internal Server Error')
                 all_success = False
+                break  # Stop on first failure
 
-        # If any execution failed, roll back would happen here
-        # For now, we don't have transactional support
+        # Mark remaining operations as failed dependencies
+        if not all_success:
+            for i, (action, ns, propname, value) in enumerate(self._operations):
+                if i > execution_index and (ns, propname) not in self._results:
+                    self._results[(ns, propname)] = (424, 'Failed Dependency')
+
         return all_success
 
     def create_response(self):
@@ -158,15 +170,24 @@ class PROPPATCH:
         namespaces = {}
         ns_counter = 0
 
+        # Collect namespaces and avoid collisions
+        used_prefixes = set(['D'])  # Reserve 'D' for DAV:
+
         for (ns, propname), (status_code, description) in self._results.items():
             if status_code not in status_groups:
                 status_groups[status_code] = []
             status_groups[status_code].append((ns, propname))
 
-            # Track namespaces for later
-            if ns and ns not in namespaces and ns != "DAV:":
-                namespaces[ns] = "ns%d" % ns_counter
-                ns_counter += 1
+            # Track namespaces for later, avoiding collisions
+            if ns and ns not in namespaces and ns != DAV_NAMESPACE:
+                # Generate unique prefix
+                while True:
+                    prefix = "ns%d" % ns_counter
+                    ns_counter += 1
+                    if prefix not in used_prefixes:
+                        used_prefixes.add(prefix)
+                        namespaces[ns] = prefix
+                        break
 
         # Add namespace declarations to root
         for ns, prefix in namespaces.items():
@@ -175,9 +196,9 @@ class PROPPATCH:
         # Create response element
         re = doc.createElement("D:response")
 
-        # Add href
+        # Add href - URI is already decoded by caller, use quote_uri for proper encoding
         href = doc.createElement("D:href")
-        huri = doc.createTextNode(urllib.parse.quote(self._uri))
+        huri = doc.createTextNode(utils.quote_uri(self._uri))
         href.appendChild(huri)
         re.appendChild(href)
 

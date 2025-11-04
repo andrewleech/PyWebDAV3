@@ -48,15 +48,23 @@ def parse_propfind(xml_doc):
     return request_type,props,namespaces
 
 
-def get_element_text(element):
+def get_element_content(element):
     """
-    Extract text content from an XML element
+    Extract the complete content of an XML element as a string
+
+    This preserves nested XML elements, not just text content.
+    Returns the XML content without the outer element tags.
     """
-    text = []
+    # Get the inner XML by serializing all child nodes
+    content = []
     for node in element.childNodes:
-        if node.nodeType == minidom.Node.TEXT_NODE:
-            text.append(node.data)
-    return ''.join(text)
+        if node.nodeType == minidom.Node.ELEMENT_NODE:
+            content.append(node.toxml())
+        elif node.nodeType == minidom.Node.TEXT_NODE:
+            content.append(node.data)
+        elif node.nodeType == minidom.Node.CDATA_SECTION_NODE:
+            content.append(node.data)
+    return ''.join(content)
 
 
 def parse_proppatch(xml_doc):
@@ -77,7 +85,7 @@ def parse_proppatch(xml_doc):
                     continue
                 ns = e.namespaceURI
                 name = e.localName
-                value = get_element_text(e)
+                value = get_element_content(e)
                 operations.append(('set', ns, name, value))
 
     # Process <remove> operations

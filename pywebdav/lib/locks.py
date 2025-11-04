@@ -154,25 +154,25 @@ class LockManager:
         alreadylocked = self._l_isLocked(uri)
         log.info('do_LOCK: alreadylocked = %s' % alreadylocked)
 
-        if body and alreadylocked:
-            # Full LOCK request but resource already locked
-            self.responses[423] = ('Locked', 'Already locked')
-            return self.send_status(423)
-
-        elif body and not ifheader:
+        if body and not ifheader:
             # LOCK with XML information
             data = self._lock_unlock_parse(body)
-            token, result = self._lock_unlock_create(uri, 'unknown', depth, data)
+            try:
+                token, result = self._lock_unlock_create(uri, 'unknown', depth, data)
 
-            if result:
-                self.send_body(bytes(result, 'utf-8'), 207, 'Error', 'Error',
-                                'text/xml; charset="utf-8"')
-
-            else:
-                lock = self._l_getLock(token)
-                self.send_body(bytes(lock.asXML(), 'utf-8'), 200, 'OK', 'OK',
-                                'text/xml; charset="utf-8"',
-                                {'Lock-Token' : '<opaquelocktoken:%s>' % token})
+                if result:
+                    self.send_body(bytes(result, 'utf-8'), 207, 'Error', 'Error',
+                                    'text/xml; charset="utf-8"')
+                else:
+                    lock = self._l_getLock(token)
+                    self.send_body(bytes(lock.asXML(), 'utf-8'), 200, 'OK', 'OK',
+                                    'text/xml; charset="utf-8"',
+                                    {'Lock-Token' : '<opaquelocktoken:%s>' % token})
+            except Exception as e:
+                # Lock creation failed (e.g., incompatible lock exists)
+                log.info(f'Lock creation failed: {e}')
+                self.responses[423] = ('Locked', str(e))
+                return self.send_status(423)
 
 
         else:

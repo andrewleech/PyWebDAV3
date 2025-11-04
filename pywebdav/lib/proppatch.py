@@ -94,10 +94,12 @@ class PROPPATCH:
             return False
 
         # Phase 2: Execute all operations (all validation passed)
-        # NOTE: With file-based storage, true atomicity requires complex
-        # rollback mechanisms. We use file locking to prevent races, and
-        # fail-fast to minimize partial updates. On first failure, we stop
-        # and mark remaining operations as 424 Failed Dependency.
+        # LIMITATION: This implementation does NOT provide true atomicity.
+        # RFC 4918 requires all operations succeed or all fail, but we cannot
+        # rollback file-based property changes without a transaction log.
+        # We use fail-fast (stop on first error) and file locking to minimize
+        # inconsistency, but process crashes mid-execution leave partial updates.
+        # True atomicity would require journaling or a transactional database.
         all_success = True
         execution_index = 0
 

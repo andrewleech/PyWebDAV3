@@ -296,11 +296,13 @@ class FilesystemHandler(dav_interface):
         local_path = self.uri2local(uri)
         props_path = local_path + '.props'
 
-        # Security: Validate path is within base directory
-        normalized_base = os.path.normpath(os.path.realpath(self.directory))
-        normalized_props = os.path.normpath(os.path.realpath(props_path))
+        # Security: Validate path BEFORE resolving symlinks to prevent bypass
+        # An attacker could create a symlink within the allowed directory
+        # that points outside - realpath() would follow it and bypass the check
+        normalized_base = os.path.normpath(os.path.abspath(self.directory))
+        normalized_props = os.path.normpath(os.path.abspath(props_path))
 
-        if not normalized_props.startswith(normalized_base):
+        if not normalized_props.startswith(normalized_base + os.sep) and normalized_props != normalized_base:
             log.error(f'Path traversal attempt: {props_path} escapes {self.directory}')
             raise DAV_Forbidden('Invalid path')
 
@@ -359,7 +361,14 @@ class FilesystemHandler(dav_interface):
         if total_count > MAX_PROPERTY_COUNT:
             raise DAV_Error(507, f'Property count exceeds limit of {MAX_PROPERTY_COUNT}')
 
-        total_size = len(json.dumps(self._normalize_props_for_json(props)))
+        # Approximate total size by summing value lengths + overhead
+        # This avoids expensive JSON serialization just for size checking
+        # Overhead approximation: 50 bytes per property for JSON structure
+        total_size = sum(
+            len(propname) + len(value) + len(ns or '') + 50
+            for ns, propdict in props.items()
+            for propname, value in propdict.items()
+        )
         if total_size > MAX_PROPERTY_TOTAL_SIZE:
             raise DAV_Error(507, f'Total property size exceeds limit of {MAX_PROPERTY_TOTAL_SIZE} bytes')
 
@@ -454,21 +463,33 @@ class FilesystemHandler(dav_interface):
         if not os.path.exists(props_dir):
             os.makedirs(props_dir, exist_ok=True)
 
-        # Lock and load existing properties
-        if os.path.exists(props_file):
-            with open(props_file, 'r+') as f:
-                self._lock_props_file(f)
-                try:
-                    props = json.load(f)
+        # Atomically open file for read/write, creating if needed
+        # This avoids TOCTOU race between existence check and open
+        try:
+            # Try to open existing file
+            f = open(props_file, 'r+')
+        except FileNotFoundError:
+            # File doesn't exist - create it atomically
+            # Use 'x' mode for exclusive creation (fails if exists)
+            try:
+                f = open(props_file, 'x+')
+            except FileExistsError:
+                # Another process created it - open for read/write
+                f = open(props_file, 'r+')
+
+        # Now we have an open file handle - acquire lock and load
+        with f:
+            self._lock_props_file(f)
+            try:
+                f.seek(0)
+                content = f.read()
+                if content:
+                    props = json.loads(content)
                     # Convert "null" string back to None for null namespaces
                     props = self._normalize_props_from_json(props)
-                except json.JSONDecodeError:
+                else:
                     props = {}
-        else:
-            # Create new properties file with lock
-            open(props_file, 'a').close()  # Touch file
-            with open(props_file, 'r+') as f:
-                self._lock_props_file(f)
+            except json.JSONDecodeError:
                 props = {}
 
         try:
@@ -503,11 +524,14 @@ class FilesystemHandler(dav_interface):
 
         props_file = self._get_props_file(uri)
 
-        if not os.path.exists(props_file):
-            return True  # Idempotent: already doesn't exist
+        # Try to open file atomically - if it doesn't exist, operation is already done
+        try:
+            f = open(props_file, 'r+')
+        except FileNotFoundError:
+            return True  # Idempotent: file doesn't exist, property already removed
 
         # Lock and load properties
-        with open(props_file, 'r+') as f:
+        with f:
             self._lock_props_file(f)
             try:
                 props = json.load(f)
@@ -541,6 +565,7 @@ class FilesystemHandler(dav_interface):
         Copy .props file from source to destination
 
         Used internally by COPY operation to preserve properties.
+        Non-fatal: If property copy fails, resource is still copied.
         """
         try:
             src_props = self._get_props_file(src_uri)
@@ -549,14 +574,14 @@ class FilesystemHandler(dav_interface):
             if os.path.exists(src_props):
                 shutil.copy2(src_props, dst_props)
         except Exception as e:
-            log.warning(f'Failed to copy properties from {src_uri} to {dst_uri}: {e}')
-            # Non-fatal: resource copied even if properties aren't
+            log.warning(f'Failed to copy properties from {src_uri} to {dst_uri}: {e}', exc_info=True)
 
     def _move_props_file(self, src_uri, dst_uri):
         """
         Move .props file from source to destination
 
         Used internally by MOVE operation to preserve properties.
+        Non-fatal: If property move fails, resource is still moved.
         """
         try:
             src_props = self._get_props_file(src_uri)
@@ -565,22 +590,21 @@ class FilesystemHandler(dav_interface):
             if os.path.exists(src_props):
                 shutil.move(src_props, dst_props)
         except Exception as e:
-            log.warning(f'Failed to move properties from {src_uri} to {dst_uri}: {e}')
-            # Non-fatal: resource moved even if properties aren't
+            log.warning(f'Failed to move properties from {src_uri} to {dst_uri}: {e}', exc_info=True)
 
     def _delete_props_file(self, uri):
         """
         Delete .props file for a resource
 
         Used internally by DELETE operation.
+        Non-fatal: If property file deletion fails, resource is still deleted.
         """
         try:
             props_file = self._get_props_file(uri)
             if os.path.exists(props_file):
                 os.remove(props_file)
         except Exception as e:
-            log.warning(f'Failed to delete properties for {uri}: {e}')
-            # Non-fatal: resource deleted even if properties aren't
+            log.warning(f'Failed to delete properties for {uri}: {e}', exc_info=True)
 
     def get_propnames(self, uri):
         """

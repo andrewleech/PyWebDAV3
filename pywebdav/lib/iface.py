@@ -80,6 +80,50 @@ class dav_interface:
             raise DAV_NotFound
 
     ###
+    ### PROPERTY MANAGEMENT (for PROPPATCH)
+    ###
+
+    def get_dead_props(self, uri):
+        """ return all dead properties for a resource
+
+        Dead properties are custom properties set by clients via PROPPATCH.
+        Returns a dict: {namespace: {propname: value, ...}, ...}
+
+        Base implementation has no storage, returns empty dict.
+        Override this in subclasses that support property storage.
+        """
+        return {}
+
+    def set_prop(self, uri, ns, propname, value):
+        """ set a property value (dead property)
+
+        uri        -- uri of the resource
+        ns         -- namespace of the property
+        propname   -- name of the property
+        value      -- value to set (string)
+
+        Returns True on success, raises DAV_Error on failure.
+        Protected properties (DAV: namespace) should raise DAV_Forbidden.
+
+        Base implementation doesn't support property storage.
+        """
+        raise DAV_Forbidden
+
+    def del_prop(self, uri, ns, propname):
+        """ delete a property (dead property)
+
+        uri        -- uri of the resource
+        ns         -- namespace of the property
+        propname   -- name of the property
+
+        Returns True on success, raises DAV_Error on failure.
+        Should succeed even if property doesn't exist (idempotent).
+
+        Base implementation doesn't support property storage.
+        """
+        raise DAV_Forbidden
+
+    ###
     ### DATA methods (for GET and PUT)
     ###
 

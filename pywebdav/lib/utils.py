@@ -48,6 +48,68 @@ def parse_propfind(xml_doc):
     return request_type,props,namespaces
 
 
+def get_element_content(element):
+    """
+    Extract the complete content of an XML element as a string
+
+    This preserves nested XML elements, not just text content.
+    Returns the XML content without the outer element tags.
+    """
+    # Get the inner XML by serializing all child nodes
+    content = []
+    for node in element.childNodes:
+        if node.nodeType == minidom.Node.ELEMENT_NODE:
+            content.append(node.toxml())
+        elif node.nodeType == minidom.Node.TEXT_NODE:
+            content.append(node.data)
+        elif node.nodeType == minidom.Node.CDATA_SECTION_NODE:
+            content.append(node.data)
+    return ''.join(content)
+
+
+def parse_proppatch(xml_doc):
+    """
+    Parse a PROPPATCH propertyupdate XML document
+
+    Returns a list of tuples: [(action, namespace, propname, value), ...]
+    where action is 'set' or 'remove'
+
+    Per RFC 4918, operations must be processed in document order.
+    """
+    doc = minidom.parseString(xml_doc)
+    operations = []
+
+    # Get propertyupdate root and process children in document order
+    propertyupdate = doc.getElementsByTagNameNS("DAV:", "propertyupdate")[0]
+
+    for child in propertyupdate.childNodes:
+        if child.nodeType != minidom.Node.ELEMENT_NODE:
+            continue
+
+        if child.namespaceURI == "DAV:" and child.localName == "set":
+            # Process <set> operation
+            for prop_elem in child.getElementsByTagNameNS("DAV:", "prop"):
+                for e in prop_elem.childNodes:
+                    if e.nodeType != minidom.Node.ELEMENT_NODE:
+                        continue
+                    ns = e.namespaceURI
+                    name = e.localName
+                    value = get_element_content(e)
+                    operations.append(('set', ns, name, value))
+
+        elif child.namespaceURI == "DAV:" and child.localName == "remove":
+            # Process <remove> operation
+            for prop_elem in child.getElementsByTagNameNS("DAV:", "prop"):
+                for e in prop_elem.childNodes:
+                    if e.nodeType != minidom.Node.ELEMENT_NODE:
+                        continue
+                    ns = e.namespaceURI
+                    name = e.localName
+                    operations.append(('remove', ns, name, None))
+
+    return operations
+
+
 def create_treelist(dataclass,uri):
     """ create a list of resources out of a tree
 
